@@ -18,7 +18,7 @@ server.tool(
   'get_recent_sightings',
   {
     region_code: z.string().describe('eBird region code e.g. DE-BE for Berlin, FR for France'),
-    species_code: z.string().optional().describe('eBird species code e.g. desswo1 for Desert Wheatear. Omit to get all recent sightings in region.')
+    species_code: z.string().optional().describe('eBird species code e.g. mispwo1 for Middle Spotted Woodpecker. Omit to get all recent sightings in region.')
   },
   async ({ region_code, species_code }) => {
     const url = species_code
@@ -62,7 +62,58 @@ server.tool(
   }
 );
 
+server.tool(
+  'get_species_code',
+  {
+    common_name: z.string().describe('Common name of the bird e.g. "Middle Spotted Woodpecker"')
+  },
+  async ({ common_name }) => {
+    const url = `${EBIRD_BASE_URL}/ref/taxonomy/ebird?fmt=json`;
 
+    const response = await fetch(url, {
+      headers: { 'X-eBirdApiToken': EBIRD_API_KEY }
+    });
+
+    if (!response.ok) {
+      return {
+        content: [{
+          type: 'text',
+          text: `eBird taxonomy API error: ${response.status}`
+        }]
+      };
+    }
+
+    const taxonomy = await response.json();
+    const search = common_name.toLowerCase();
+
+    const exactMatch = taxonomy.find(species =>
+      species.comName.toLowerCase() === search
+    );
+
+    const partialMatch = taxonomy.find(species =>
+      species.comName.toLowerCase().includes(search) ||
+      species.sciName.toLowerCase().includes(search)
+    );
+
+    const match = exactMatch || partialMatch;
+
+    if (!match) {
+      return {
+        content: [{
+          type: 'text',
+          text: `No species found matching "${common_name}". Try a different name or check spelling.`
+        }]
+      };
+    }
+
+    return {
+      content: [{
+        type: 'text',
+        text: `Species found: ${match.comName} (${match.sciName}) — eBird code: ${match.speciesCode}`
+      }]
+    };
+  }
+);
 
 const transport = new StdioServerTransport();
 await server.connect(transport);

@@ -68,8 +68,36 @@ async function chat(userMessage, mcpClient, anthropicTools) {
   while (currentResponse.stop_reason === 'tool_use') {
     const toolUseBlock = currentResponse.content.find(b => b.type === 'tool_use');
 
-    const toolLabel = toolUseBlock.input.region_code
-      ? `region ${toolUseBlock.input.region_code}`
+    if (toolUseBlock.name === 'get_recent_sightings' && !toolUseBlock.input.species_code) {
+      console.log('\n[Bubo tried to query eBird without a species code — intercepted]\n');
+
+      conversationHistory.push({
+        role: 'assistant',
+        content: currentResponse.content
+      });
+
+      conversationHistory.push({
+        role: 'user',
+        content: [{
+          type: 'tool_result',
+          tool_use_id: toolUseBlock.id,
+          content: 'Error: species_code is required. Call get_species_code first to look up the correct code, then call get_recent_sightings with both region_code and species_code.'
+        }]
+      });
+
+      currentResponse = await client.messages.create({
+        model: 'claude-opus-4-5',
+        max_tokens: 1024,
+        system: systemPrompt,
+        tools: anthropicTools,
+        messages: conversationHistory
+      });
+
+      continue;
+    }
+
+    const toolLabel = toolUseBlock.input.species_code
+      ? `species "${toolUseBlock.input.common_name || toolUseBlock.input.species_code}" in ${toolUseBlock.input.region_code}`
       : `species "${toolUseBlock.input.common_name}"`;
     console.log(`\n[Bubo is checking eBird — ${toolLabel}...]\n`);
 
