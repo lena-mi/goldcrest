@@ -141,6 +141,6 @@ node agent.js
 
 ## About
 
-Built by Lena as a portfolio project while transitioning from senior product design into AI product/builder roles. The goal is to ship something real at the intersection of product thinking, AI agent design, and working code.
+Built by Olena as a portfolio project while transitioning from senior product design into AI product/builder roles. The goal is to ship something real at the intersection of product thinking, AI agent design, and working code.
 
 Previous project: [a11y-check](https://github.com/lena-mi/a11y-check) — an accessibility auditing tool.
