@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Goldcrest — Build Roadmap</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:           #0e0e0e;
+    --surface-hdr:  #1a1a1a;
+    --surface-body: #111111;
+    --surface-input:#181818;
+    --border:       #272727;
+    --border2:      #353535;
+    --text:         #e8e4dc;
+    --muted:        #8a8580;
+    --muted2:       #555250;
+    --accent:       #c8f07a;
+    --accent-dim:   rgba(200,240,122,0.07);
+    --done:         #4ade80;
+    --done-dim:     rgba(74,222,128,0.07);
+    --info:         #7db8f7;
+    --info-dim:     rgba(125,184,247,0.09);
+    --serif: 'DM Serif Display', Georgia, serif;
+    --mono:  'DM Mono', 'Courier New', monospace;
+    --r:  6px;
+    --rl: 10px;
+    --focus: 0 0 0 3px rgba(200,240,122,0.5);
+  }
+
+  /* 4 font styles only:
+     1. serif italic          → DM Serif Display italic
+     2. mono weight 500       → labels, phase names, buttons
+     3. mono weight 400       → body text, inputs
+     4. mono weight 300       → secondary / metadata            */
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.65;
+    min-height: 100vh;
+  }
+
+  :focus-visible { outline: none; box-shadow: var(--focus); border-radius: var(--r); }
+
+  .skip-link {
+    position: absolute; top: -100px; left: 16px;
+    background: var(--accent); color: #000;
+    font-family: var(--mono); font-weight: 500; font-size: 12px;
+    padding: 8px 14px; border-radius: var(--r); z-index: 100;
+    transition: top 0.15s; text-decoration: none;
+  }
+  .skip-link:focus { top: 16px; }
+
+  /* ── Page header ── */
+  .page-header {
+    padding: 44px 48px 28px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  h1.title {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 34px;
+    letter-spacing: -0.3px;
+    line-height: 1;
+    color: var(--text);
+  }
+  .title-accent { color: var(--accent); }
+  .subtitle {
+    font-family: var(--mono);
+    font-weight: 300;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 7px;
+  }
+  .github-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-decoration: none;
+    border: 1px solid var(--border2);
+    border-radius: var(--r);
+    padding: 7px 13px;
+    transition: color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+    margin-top: 4px;
+  }
+  .github-link:hover { color: var(--text); border-color: var(--muted); }
+  .progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 22px;
+  }
+  .progress-bar {
+    flex: 1; height: 2px;
+    background: var(--border); border-radius: 2px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: var(--accent);
+    border-radius: 2px; transition: width 0.5s ease;
+  }
+  .progress-label {
+    font-family: var(--mono); font-weight: 300; font-size: 11px;
+    color: var(--muted); white-space: nowrap;
+  }
+
+  /* ── Goal ── */
+  .goal-banner {
+    margin: 0 48px 32px;
+    padding: 18px 22px;
+    border: 1px solid var(--border2);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--r);
+    background: var(--accent-dim);
+  }
+  .goal-label {
+    font-family: var(--mono); font-weight: 500;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 5px;
+  }
+  .goal-text {
+    font-family: var(--serif); font-style: italic;
+    font-size: 15px; color: var(--text); line-height: 1.5;
+  }
+
+  /* ── Roadmap ── */
+  main { padding: 0 48px 80px; max-width: 900px; }
+
+  .phase { position: relative; margin-bottom: 10px; }
+  .phase-line {
+    position: absolute; left: 19px; top: 52px; bottom: -10px;
+    width: 1px; background: var(--border); z-index: 0; pointer-events: none;
+  }
+  .phase:last-child .phase-line { display: none; }
+
+  /* Single unified card */
+  .phase-card {
+    position: relative; z-index: 1;
+    border: 1px solid var(--border); border-radius: var(--rl);
+    overflow: hidden; transition: border-color 0.2s;
+  }
+  .phase-card:hover { border-color: var(--border2); }
+  .phase-card.done  { border-color: rgba(74,222,128,0.22); }
+  .phase-card.done:hover { border-color: rgba(74,222,128,0.36); }
+
+  /* Header strip */
+  .phase-hdr {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 16px 18px;
+    background: var(--surface-hdr);
+    cursor: pointer; user-select: none;
+    border-bottom: 1px solid transparent;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .phase-card.open .phase-hdr { border-bottom-color: var(--border); }
+  .phase-hdr:hover { background: #1e1e1e; }
+  .phase-card.done .phase-hdr { background: rgba(74,222,128,0.05); }
+
+  /* Complete button */
+  .phase-toggle {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 1.5px solid var(--border2); background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 2px; cursor: pointer;
+    transition: border-color 0.15s, background 0.15s; padding: 0;
+  }
+  .phase-toggle:hover { border-color: var(--accent); }
+  .phase-card.done .phase-toggle { background: var(--done); border-color: var(--done); }
+  .phase-toggle .chk-icon { display: none; }
+  .phase-card.done .phase-toggle .chk-icon { display: block; }
+
+  .phase-meta { flex: 1; min-width: 0; }
+  .phase-row1 {
+    display: flex; align-items: baseline;
+    gap: 9px; margin-bottom: 2px; flex-wrap: wrap;
+  }
+  .phase-num {
+    font-family: var(--mono); font-weight: 300;
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted);
+  }
+  .phase-name {
+    font-family: var(--serif); font-style: italic;
+    font-size: 17px; color: var(--text); line-height: 1.2;
+  }
+  .phase-card.done .phase-name { color: var(--done); }
+  .phase-desc {
+    font-weight: 300; font-size: 12px;
+    color: var(--muted); margin-bottom: 8px; line-height: 1.5;
+  }
+  .phase-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+  .pill {
+    font-family: var(--mono); font-weight: 300; font-size: 10px;
+    letter-spacing: 0.04em; padding: 2px 8px; border-radius: 20px;
+    border: 1px solid var(--border2); color: var(--muted);
+  }
+  .pill-learn { border-color: rgba(125,184,247,0.28); color: var(--info); }
+  .pill-week  { color: var(--muted2); }
+
+  /* Right side of header */
+  .phase-hdr-right {
+    display: flex; flex-direction: column;
+    align-items: flex-end; gap: 7px; flex-shrink: 0;
+  }
+  .status-badge {
+    font-family: var(--mono); font-weight: 500;
+    font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 3px 9px; border-radius: 20px;
+    border: 1px solid var(--border); color: var(--muted);
+  }
+  .phase-card.done .status-badge {
+    border-color: rgba(74,222,128,0.28); color: var(--done); background: var(--done-dim);
+  }
+  .expand-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono); font-weight: 500;
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); background: transparent;
+    border: 1px solid var(--border); border-radius: var(--r);
+    padding: 5px 10px; cursor: pointer; line-height: 1;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .expand-btn:hover { color: var(--text); border-color: var(--border2); }
+  .chevron {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 10px; height: 10px; line-height: 1;
+    transition: transform 0.22s ease;
+    font-style: normal; font-size: 10px;
+  }
+  .phase-card.open .chevron { transform: rotate(180deg); }
+
+  /* Body strip — darker */
+  .phase-body { display: none; background: var(--surface-body); }
+  .phase-card.open .phase-body { display: block; }
+
+  .panel-tabs {
+    display: flex; border-bottom: 1px solid var(--border); padding: 0 4px;
+  }
+  .tab-btn {
+    font-family: var(--mono); font-weight: 500;
+    font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); background: transparent; border: none;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    padding: 10px 14px; cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .tab-pane { display: none; padding: 20px; }
+  .tab-pane.active { display: block; }
+
+  /* Substeps */
+  .substeps { list-style: none; }
+  .substep {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 9px 0; border-bottom: 1px solid var(--border);
+  }
+  .substep:last-child { border-bottom: none; }
+  .substep-check {
+    width: 16px; height: 16px; border-radius: 3px;
+    border: 1.5px solid var(--border2); background: var(--bg);
+    flex-shrink: 0; margin-top: 2px; cursor: pointer; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: transparent;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .substep-check:hover { border-color: var(--accent); }
+  .substep-check.checked { background: var(--done); border-color: var(--done); color: #000; }
+  .substep-label { font-weight: 400; font-size: 12px; color: var(--text); line-height: 1.55; }
+  .substep-label.struck { color: var(--muted2); text-decoration: line-through; }
+
+  /* Notes */
+  .notes-grid { display: flex; flex-direction: column; gap: 14px; }
+  .note-block label {
+    display: block; font-family: var(--mono); font-weight: 500;
+    font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 5px;
+  }
+  .note-block textarea {
+    width: 100%; min-height: 68px;
+    background: var(--surface-input); border: 1px solid var(--border);
+    border-radius: var(--r); color: var(--text);
+    font-family: var(--mono); font-weight: 400; font-size: 12px;
+    line-height: 1.6; padding: 9px 12px; resize: vertical; outline: none;
+    transition: border-color 0.15s;
+  }
+  .note-block textarea:focus { border-color: var(--muted); box-shadow: var(--focus); }
+  .note-block textarea::placeholder { color: var(--muted2); }
+  .save-note {
+    font-family: var(--mono); font-weight: 300;
+    font-size: 10px; color: var(--muted2); text-align: right;
+    min-height: 14px; transition: color 0.3s;
+  }
+  .save-note.saved { color: var(--done); }
+
+  /* Learnings */
+  .learnings-wrap { display: flex; flex-direction: column; gap: 12px; }
+  .learnings-hint { font-weight: 300; font-size: 11px; color: var(--muted); }
+  .tags-field {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    min-height: 36px; padding: 6px 10px;
+    background: var(--surface-input); border: 1px solid var(--border);
+    border-radius: var(--r); cursor: text; transition: border-color 0.15s;
+  }
+  .tags-field:focus-within { border-color: var(--muted); box-shadow: var(--focus); }
+  .tag {
+    display: inline-flex; align-items: center; gap: 3px;
+    background: var(--info-dim); border: 1px solid rgba(125,184,247,0.22);
+    color: var(--info); font-family: var(--mono); font-weight: 400;
+    font-size: 11px; padding: 2px 6px 2px 9px; border-radius: 20px;
+  }
+  .tag-rm {
+    background: none; border: none; color: var(--info); opacity: 0.6;
+    cursor: pointer; font-size: 14px; line-height: 1; padding: 0 1px;
+    display: flex; align-items: center;
+  }
+  .tag-rm:hover { opacity: 1; }
+  .tag-input {
+    background: transparent; border: none; outline: none; color: var(--text);
+    font-family: var(--mono); font-weight: 400; font-size: 12px;
+    min-width: 160px; flex: 1;
+  }
+  .tag-input::placeholder { color: var(--muted2); }
+  .suggest-label {
+    font-family: var(--mono); font-weight: 300;
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted2);
+  }
+  .suggest-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+  .suggest-pill {
+    font-family: var(--mono); font-weight: 300; font-size: 10px;
+    padding: 2px 9px; border-radius: 20px;
+    border: 1px solid rgba(125,184,247,0.28); color: var(--info);
+    background: transparent; cursor: pointer; transition: background 0.12s;
+  }
+  .suggest-pill:hover { background: var(--info-dim); }
+
+  /* Footer */
+  .page-footer { padding: 0 48px 48px; }
+  .footer-note {
+    padding: 14px 18px; border: 1px dashed var(--border);
+    border-radius: var(--r); font-weight: 300; font-size: 11px;
+    color: var(--muted); line-height: 1.6;
+  }
+  .footer-note strong { font-weight: 500; }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<header class="page-header" role="banner">
+  <div class="header-row">
+    <div>
+      <h1 class="title">Goldcrest <span class="title-accent">Roadmap</span></h1>
+      <p class="subtitle">Citizen Science Bird Agent · Build Log</p>
+    </div>
+    <a class="github-link"
+       href="https://github.com/lena-mi/goldcrest"
+       target="_blank"
+       rel="noopener noreferrer"
+       aria-label="View Goldcrest source code on GitHub (opens in new tab)">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false">
+        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+      </svg>
+      GitHub
+    </a>
+  </div>
+  <div class="progress-wrap"
+       role="progressbar"
+       aria-valuenow="0" aria-valuemin="0" aria-valuemax="5"
+       id="progressRegion"
+       aria-label="Project phases complete">
+    <div class="progress-bar" aria-hidden="true">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+    <span class="progress-label" id="progressLabel" aria-live="polite">0 / 5 phases complete</span>
+  </div>
+</header>
+
+<div class="goal-banner" role="note" aria-label="Project goal statement">
+  <div class="goal-label" aria-hidden="true">Project goal</div>
+  <p class="goal-text">Build a citizen science contribution assistant — not a bird ID tool. Vague memory → research-grade sighting, powered by a Claude chat agent.</p>
+</div>
+
+<main id="main-content" aria-label="Project phases roadmap">
+  <div id="roadmap"></div>
+</main>
+
+<footer class="page-footer">
+  <div class="footer-note" role="note">
+    <strong>Framer export:</strong> Self-contained HTML with no build step. Embed via Framer's Embed → Custom Code, or host on GitHub Pages / Netlify and point an iframe at it. All notes and progress persist in <code>localStorage</code> on the same device.
+  </div>
+</footer>
+
+<script>
+const PHASES = [
+  {
+    id:'p1', num:'Phase 01', name:'Terminal prototype',
+    desc:'Claude API + system prompt + multi-turn loop. No UI. Prove the agent logic works.',
+    time:'1–2 weeks',
+    learns:['system prompts','multi-turn context','confidence thresholds','Claude API'],
+    substeps:[
+      'Set up Node.js project and install @anthropic-ai/sdk',
+      'Write system prompt (skill file) — identity, confidence rules, question limits',
+      'Build conversation loop — send full history to API each turn',
+      'Implement confidence routing — ask a question vs suggest an ID',
+      'Handle 3-question escalation and unidentified output format',
+      'Test with real sighting descriptions end to end'
+    ]
+  },
+  {
+    id:'p2', num:'Phase 02', name:'Real data via MCP',
+    desc:'Connect eBird API via Model Context Protocol. Validate IDs against live species data.',
+    time:'1 week',
+    learns:['MCP pattern','external API integration','grounding an LLM','eBird taxonomy'],
+    substeps:[
+      'Understand MCP — what it is and why it exists',
+      'Set up eBird API key and test basic fetch requests',
+      'Build MCP server with get_species_code tool',
+      'Build get_recent_sightings with region + species code',
+      'Connect MCP server to agent.js',
+      'Test two-step verification flow end to end'
+    ]
+  },
+  {
+    id:'p3', num:'Phase 03', name:'Persist sightings',
+    desc:'Supabase database. Every confirmed sighting saved with full metadata.',
+    time:'1 week',
+    learns:['Supabase basics','database schema design','full pipeline thinking','async JS'],
+    substeps:[
+      'Create Supabase project and sightings table',
+      'Define schema: species, confidence, timestamp, location, evidence_type, notes',
+      'Write insert function triggered on user confirmation',
+      'Test full loop: chat → ID → confirm → saved in DB',
+      'View and verify saved records in Supabase dashboard'
+    ]
+  },
+  {
+    id:'p4', num:'Phase 04', name:'Minimal UI',
+    desc:'Simple chat interface in HTML/JS. Demoable without a terminal.',
+    time:'1–2 weeks',
+    learns:['frontend ↔ API bridge','chat UI patterns','design in code','fetch / async'],
+    substeps:[
+      'Design chat interface — message bubbles, input, confidence display',
+      'Wire frontend to agent logic via a simple Express server',
+      'Show confidence score visually during conversation',
+      'Handle confirmation flow in UI',
+      'Polish for demo — readable on any screen'
+    ]
+  },
+  {
+    id:'p5', num:'Phase 05', name:'Case study',
+    desc:'Document every decision. The code is the proof. The case study is the story.',
+    time:'Ongoing',
+    learns:['product storytelling','decision documentation','AI design patterns','portfolio craft'],
+    substeps:[
+      'Document the core problem — why not just Merlin?',
+      'Write up confidence threshold decision and tuning',
+      'Explain the ≤3 questions constraint and why it matters',
+      'Describe MCP two-tool approach and what broke along the way',
+      'Add screenshots, transcripts, real output examples',
+      'Publish case study on portfolio site'
+    ]
+  }
+];
+
+function load() { try { return JSON.parse(localStorage.getItem('gcr3')||'{}'); } catch { return {}; } }
+function persist(s) { localStorage.setItem('gcr3', JSON.stringify(s)); }
+let S = load();
+
+function ps(id) {
+  return S[id] || { done:false, substeps:{}, wins:'', issues:'', notes:'', learnings:[] };
+}
+function up(id, patch) {
+  S[id] = { ...ps(id), ...patch };
+  persist(S);
+  refreshProg();
+}
+
+function refreshProg() {
+  const done = PHASES.filter(p => ps(p.id).done).length;
+  const pct  = Math.round(done / PHASES.length * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = done + ' / ' + PHASES.length + ' phases complete';
+  document.getElementById('progressRegion').setAttribute('aria-valuenow', done);
+}
+
+function buildPhase(ph) {
+  const s = ps(ph.id), done = s.done;
+  const wrap = document.createElement('div');
+  wrap.className = 'phase';
+  wrap.innerHTML = `
+<div class="phase-line" aria-hidden="true"></div>
+<div class="phase-card${done?' done':''}" id="card-${ph.id}">
+
+  <div class="phase-hdr"
+       id="hdr-${ph.id}"
+       role="button"
+       tabindex="0"
+       aria-expanded="false"
+       aria-controls="body-${ph.id}">
+
+    <button class="phase-toggle"
+            id="tog-${ph.id}"
+            aria-label="Mark ${ph.name} as ${done?'incomplete':'complete'}"
+            aria-pressed="${done}">
+      <svg class="chk-icon" width="10" height="8" viewBox="0 0 10 8" fill="none" aria-hidden="true">
+        <path d="M1 4L3.5 6.5L9 1" stroke="#000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+
+    <div class="phase-meta">
+      <div class="phase-row1">
+        <span class="phase-num" aria-hidden="true">${ph.num}</span>
+        <span class="phase-name">${ph.name}</span>
+      </div>
+      <p class="phase-desc">${ph.desc}</p>
+      <div class="phase-pills" aria-label="Topics">
+        ${ph.learns.map(l=>`<span class="pill pill-learn">${l}</span>`).join('')}
+        <span class="pill pill-week">${ph.time}</span>
+      </div>
+    </div>
+
+    <div class="phase-hdr-right">
+      <span class="status-badge" id="badge-${ph.id}" aria-live="polite">${done?'complete':'upcoming'}</span>
+      <button class="expand-btn"
+              id="exp-${ph.id}"
+              aria-label="Toggle details for ${ph.name}"
+              aria-expanded="false"
+              aria-controls="body-${ph.id}">
+        Details <span class="chevron" aria-hidden="true">↓</span>
+      </button>
+    </div>
+  </div>
+
+  <section class="phase-body" id="body-${ph.id}" aria-label="${ph.name} details">
+    <div class="panel-tabs" role="tablist" aria-label="${ph.name}">
+      <button class="tab-btn active" role="tab" aria-selected="true"
+              aria-controls="pane-steps-${ph.id}" id="tb-steps-${ph.id}"
+              data-phase="${ph.id}" data-tab="steps">Sub-steps</button>
+      <button class="tab-btn" role="tab" aria-selected="false"
+              aria-controls="pane-notes-${ph.id}" id="tb-notes-${ph.id}"
+              data-phase="${ph.id}" data-tab="notes">Reflection</button>
+      <button class="tab-btn" role="tab" aria-selected="false"
+              aria-controls="pane-learn-${ph.id}" id="tb-learn-${ph.id}"
+              data-phase="${ph.id}" data-tab="learn">Learnings</button>
+    </div>
+
+    <div class="tab-pane active" id="pane-steps-${ph.id}" role="tabpanel" aria-labelledby="tb-steps-${ph.id}">
+      <ul class="substeps">
+        ${ph.substeps.map((st,i)=>{
+          const chk = s.substeps && s.substeps[i];
+          return `<li class="substep">
+            <button class="substep-check${chk?' checked':''}"
+                    data-phase="${ph.id}" data-step="${i}"
+                    aria-label="${chk?'Unmark':'Mark as done'}: ${st}"
+                    aria-pressed="${!!chk}">${chk?'✓':''}</button>
+            <span class="substep-label${chk?' struck':''}" id="sl-${ph.id}-${i}">${st}</span>
+          </li>`;
+        }).join('')}
+      </ul>
+    </div>
+
+    <div class="tab-pane" id="pane-notes-${ph.id}" role="tabpanel" aria-labelledby="tb-notes-${ph.id}">
+      <div class="notes-grid">
+        <div class="note-block">
+          <label for="wins-${ph.id}">What went well</label>
+          <textarea id="wins-${ph.id}" data-phase="${ph.id}" data-field="wins"
+            placeholder="Wins, moments of clarity, things that clicked…">${s.wins||''}</textarea>
+        </div>
+        <div class="note-block">
+          <label for="issues-${ph.id}">What was hard or broke</label>
+          <textarea id="issues-${ph.id}" data-phase="${ph.id}" data-field="issues"
+            placeholder="Bugs, confusing concepts, things I'd do differently…">${s.issues||''}</textarea>
+        </div>
+        <div class="note-block">
+          <label for="notes-${ph.id}">Personal notes</label>
+          <textarea id="notes-${ph.id}" data-phase="${ph.id}" data-field="notes"
+            placeholder="Thoughts, observations, questions for later…">${s.notes||''}</textarea>
+        </div>
+        <div class="save-note" id="save-${ph.id}" aria-live="polite" aria-atomic="true"></div>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="pane-learn-${ph.id}" role="tabpanel" aria-labelledby="tb-learn-${ph.id}">
+      <div class="learnings-wrap">
+        <p class="learnings-hint">Type a concept and press Enter to log something you actually learned.</p>
+        <div class="tags-field" id="tfield-${ph.id}" aria-label="Learnings for ${ph.name}">
+          ${(s.learnings||[]).map(t=>`
+            <span class="tag">${t}
+              <button class="tag-rm" data-phase="${ph.id}" data-tag="${t}"
+                      aria-label="Remove learning: ${t}">×</button>
+            </span>`).join('')}
+          <input class="tag-input" id="tinput-${ph.id}" data-phase="${ph.id}"
+                 placeholder="e.g. async/await, MCP transport…"
+                 aria-label="Add learning, press Enter to save"/>
+        </div>
+        <p class="suggest-label" id="sugg-lbl-${ph.id}">Suggested from phase goals</p>
+        <div class="suggest-pills" role="group" aria-labelledby="sugg-lbl-${ph.id}">
+          ${ph.learns.map(l=>`
+            <button class="suggest-pill" data-phase="${ph.id}" data-sug="${l}"
+                    aria-label="Add: ${l}">${l}</button>`).join('')}
+        </div>
+      </div>
+    </div>
+  </section>
+</div>`;
+  return wrap;
+}
+
+function renderAll() {
+  const el = document.getElementById('roadmap');
+  el.innerHTML = '';
+  PHASES.forEach(p => el.appendChild(buildPhase(p)));
+  bind();
+  refreshProg();
+}
+
+function setOpen(id, open) {
+  const card = document.getElementById('card-'+id);
+  const hdr  = document.getElementById('hdr-'+id);
+  const exp  = document.getElementById('exp-'+id);
+  card.classList.toggle('open', open);
+  hdr.setAttribute('aria-expanded', open);
+  exp.setAttribute('aria-expanded', open);
+}
+
+function bind() {
+  document.querySelectorAll('.phase-hdr').forEach(hdr => {
+    const id = hdr.id.replace('hdr-','');
+    function toggle(e) {
+      if (e.target.closest('.phase-toggle,.expand-btn')) return;
+      const open = !document.getElementById('card-'+id).classList.contains('open');
+      setOpen(id, open);
+    }
+    hdr.addEventListener('click', toggle);
+    hdr.addEventListener('keydown', e => {
+      if (e.key==='Enter'||e.key===' ') { e.preventDefault(); toggle(e); }
+    });
+  });
+
+  document.querySelectorAll('.expand-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = btn.id.replace('exp-','');
+      const open = !document.getElementById('card-'+id).classList.contains('open');
+      setOpen(id, open);
+    });
+  });
+
+  document.querySelectorAll('.phase-toggle').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = btn.id.replace('tog-','');
+      const newDone = !ps(id).done;
+      up(id, { done: newDone });
+      const card = document.getElementById('card-'+id);
+      card.classList.toggle('done', newDone);
+      btn.setAttribute('aria-pressed', newDone);
+      const ph = PHASES.find(p=>p.id===id);
+      btn.setAttribute('aria-label', `Mark ${ph.name} as ${newDone?'incomplete':'complete'}`);
+      document.getElementById('badge-'+id).textContent = newDone ? 'complete' : 'upcoming';
+    });
+  });
+
+  document.querySelectorAll('.substep-check').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.phase, idx = parseInt(btn.dataset.step);
+      const ss = { ...(ps(id).substeps||{}) };
+      ss[idx] = !ss[idx];
+      up(id, { substeps: ss });
+      const chk = ss[idx];
+      btn.classList.toggle('checked', chk);
+      btn.setAttribute('aria-pressed', chk);
+      btn.textContent = chk ? '✓' : '';
+      const ph = PHASES.find(p=>p.id===id);
+      btn.setAttribute('aria-label', `${chk?'Unmark':'Mark as done'}: ${ph.substeps[idx]}`);
+      const lbl = document.getElementById(`sl-${id}-${idx}`);
+      if (lbl) lbl.classList.toggle('struck', chk);
+    });
+  });
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.phase, tab = btn.dataset.tab;
+      document.querySelectorAll(`[data-phase="${id}"].tab-btn`).forEach(b => {
+        b.classList.remove('active'); b.setAttribute('aria-selected','false');
+      });
+      btn.classList.add('active'); btn.setAttribute('aria-selected','true');
+      document.querySelectorAll(`#body-${id} .tab-pane`).forEach(p => p.classList.remove('active'));
+      document.getElementById(`pane-${tab}-${id}`).classList.add('active');
+    });
+  });
+
+  document.querySelectorAll('textarea').forEach(ta => {
+    ta.addEventListener('input', () => {
+      up(ta.dataset.phase, { [ta.dataset.field]: ta.value });
+      const ind = document.getElementById('save-'+ta.dataset.phase);
+      if (ind) { ind.textContent='saved'; ind.classList.add('saved');
+        setTimeout(()=>{ ind.textContent=''; ind.classList.remove('saved'); }, 1400); }
+    });
+  });
+
+  bindTagInputs();
+  document.querySelectorAll('.tag-rm').forEach(btn => {
+    btn.addEventListener('click', e => { e.stopPropagation(); rmTag(btn.dataset.phase, btn.dataset.tag); });
+  });
+  document.querySelectorAll('.suggest-pill').forEach(btn => {
+    btn.addEventListener('click', () => addTag(btn.dataset.phase, btn.dataset.sug));
+  });
+}
+
+function bindTagInputs() {
+  document.querySelectorAll('.tag-input').forEach(inp => {
+    inp.addEventListener('keydown', e => {
+      if (e.key==='Enter' && inp.value.trim()) {
+        e.preventDefault(); addTag(inp.dataset.phase, inp.value.trim()); inp.value='';
+      }
+      if (e.key==='Backspace' && !inp.value) {
+        const l = [...(ps(inp.dataset.phase).learnings||[])];
+        if (l.length) { l.pop(); up(inp.dataset.phase,{learnings:l}); rebuildTags(inp.dataset.phase,true); }
+      }
+    });
+  });
+}
+
+function addTag(id, tag) {
+  const l = [...(ps(id).learnings||[])];
+  if (!l.includes(tag)) { l.push(tag); up(id,{learnings:l}); rebuildTags(id,true); }
+}
+function rmTag(id, tag) {
+  up(id, { learnings: (ps(id).learnings||[]).filter(t=>t!==tag) });
+  rebuildTags(id, false);
+}
+function rebuildTags(id, refocus) {
+  const field = document.getElementById('tfield-'+id);
+  if (!field) return;
+  field.innerHTML = (ps(id).learnings||[]).map(t=>`
+    <span class="tag">${t}
+      <button class="tag-rm" data-phase="${id}" data-tag="${t}"
+              aria-label="Remove learning: ${t}">×</button>
+    </span>`).join('') +
+    `<input class="tag-input" id="tinput-${id}" data-phase="${id}"
+            placeholder="e.g. async/await, MCP transport…"
+            aria-label="Add learning, press Enter to save"/>`;
+  field.querySelectorAll('.tag-rm').forEach(b => {
+    b.addEventListener('click', e=>{ e.stopPropagation(); rmTag(b.dataset.phase, b.dataset.tag); });
+  });
+  const ni = field.querySelector('.tag-input');
+  ni.addEventListener('keydown', e => {
+    if (e.key==='Enter'&&ni.value.trim()){e.preventDefault();addTag(id,ni.value.trim());ni.value='';}
+    if (e.key==='Backspace'&&!ni.value){
+      const l=[...(ps(id).learnings||[])];
+      if(l.length){l.pop();up(id,{learnings:l});rebuildTags(id,true);}
+    }
+  });
+  if (refocus) ni.focus();
+}
+
+renderAll();
+</script>
+</body>
+</html>

@@ -4,8 +4,15 @@ import fs from 'fs';
 import readline from 'readline';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { saveSighting } from './db.js';
 
 dotenv.config();
+
+function isConfirmation(text) {
+  const t = text.toLowerCase().trim();
+  return ['yes', 'yeah', 'yep', 'confirmed', 'correct', 'that\'s it',
+          'that\'s right', 'looks right', 'sounds right'].some(word => t.includes(word));
+}
 
 const CONFIDENCE_THRESHOLD = 75;
 
@@ -140,7 +147,26 @@ async function chat(userMessage, mcpClient, anthropicTools) {
   return finalMessage;
 }
 
+function parseSighting(text) {
+  const idMatch = text.match(/\*\*Possible ID:\*\*\s+(.+?)\s+\(\*(.+?)\*\)/);
+  const confidenceMatch = text.match(/\*\*Confidence:\*\*\s+(\d+)\/100/);
+  const reasonMatch = text.match(/\*\*Reason:\*\*\s+(.+?)(?=\n\*\*|$)/s);
+  const confirmMatch = text.match(/\*\*To confirm:\*\*\s+(.+?)(?=\n\*\*|$)/s);
+
+  return {
+    common_name: idMatch?.[1]?.trim() ?? null,
+    scientific_name: idMatch?.[2]?.trim() ?? null,
+    confidence: confidenceMatch ? parseInt(confidenceMatch[1], 10) : null,
+    reason: reasonMatch?.[1]?.trim() ?? null,
+    to_confirm: confirmMatch?.[1]?.trim() ?? null,
+    recorded_at: new Date().toISOString()
+  };
+}
+
 async function main() {
+  
+    let pendingSighting = null;
+
   console.log('Starting Bubo...');
   const { mcpClient, anthropicTools } = await startMcpClient();
   console.log(`Connected to eBird. Tools available: ${anthropicTools.map(t => t.name).join(', ')}\n`);
@@ -156,8 +182,20 @@ async function main() {
       process.exit(0);
     }
 
+    if (pendingSighting && isConfirmation(userInput)) {
+      const saved = await saveSighting(pendingSighting);
+      console.log(saved ? '\n[Sighting saved to database]\n' : '\n[Failed to save sighting — check console for details]\n');
+      pendingSighting = null;
+    }
+
     const response = await chat(userInput, mcpClient, anthropicTools);
     console.log(`\nBubo: ${response}\n`);
+
+    if (response.includes('**Possible ID:**')) {
+      pendingSighting = parseSighting(response);
+    }
+
+
   }
 }
 
