@@ -1,10 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
 import fs from 'fs';
-import readline from 'readline';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { saveSighting } from './db.js';
+
 
 dotenv.config();
 
@@ -23,18 +22,8 @@ const client = new Anthropic({
 const systemPrompt = fs.readFileSync('./prompt.md', 'utf8')
   .replace('{{CONFIDENCE_THRESHOLD}}', CONFIDENCE_THRESHOLD);
 
-const conversationHistory = [];
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
-function ask(question) {
-  return new Promise(resolve => rl.question(question, resolve));
-}
-
-async function startMcpClient() {
+export async function startMcpClient() {
   const transport = new StdioClientTransport({
     command: 'node',
     args: ['ebird-server.js']
@@ -58,18 +47,18 @@ async function startMcpClient() {
   return { mcpClient, anthropicTools };
 }
 
-async function chat(userMessage, mcpClient, anthropicTools) {
-  conversationHistory.push({
-    role: 'user',
-    content: userMessage
-  });
+export async function chat(userMessage, history, mcpClient, anthropicTools) {
+  const updatedHistory = [
+  ...history,
+  { role: 'user', content: userMessage }
+];
 
   let currentResponse = await client.messages.create({
     model: 'claude-opus-4-5',
     max_tokens: 1024,
     system: systemPrompt,
     tools: anthropicTools,
-    messages: conversationHistory
+    messages: updatedHistory
   });
 
   while (currentResponse.stop_reason === 'tool_use') {
@@ -78,17 +67,17 @@ async function chat(userMessage, mcpClient, anthropicTools) {
     if (toolUseBlock.name === 'get_recent_sightings' && !toolUseBlock.input.species_code) {
       console.log('\n[Bubo tried to query eBird without a species code — intercepted]\n');
 
-      conversationHistory.push({
+      updatedHistory.push({
         role: 'assistant',
         content: currentResponse.content
       });
 
-      conversationHistory.push({
+      updatedHistory.push({
         role: 'user',
         content: [{
           type: 'tool_result',
           tool_use_id: toolUseBlock.id,
-          content: 'Error: species_code is required. Call get_species_code first to look up the correct code, then call get_recent_sightings with both region_code and species_code.'
+          content: 'Error: species_code is required. Call get_species_code first, then call get_recent_sightings with both region_code and species_code.'
         }]
       });
 
@@ -97,7 +86,7 @@ async function chat(userMessage, mcpClient, anthropicTools) {
         max_tokens: 1024,
         system: systemPrompt,
         tools: anthropicTools,
-        messages: conversationHistory
+        messages: updatedHistory
       });
 
       continue;
@@ -113,12 +102,12 @@ async function chat(userMessage, mcpClient, anthropicTools) {
       arguments: toolUseBlock.input
     });
 
-    conversationHistory.push({
+    updatedHistory.push({
       role: 'assistant',
       content: currentResponse.content
     });
 
-    conversationHistory.push({
+    updatedHistory.push({
       role: 'user',
       content: [{
         type: 'tool_result',
@@ -132,19 +121,16 @@ async function chat(userMessage, mcpClient, anthropicTools) {
       max_tokens: 1024,
       system: systemPrompt,
       tools: anthropicTools,
-      messages: conversationHistory
+      messages: updatedHistory
     });
   }
 
   const finalText = currentResponse.content.find(b => b.type === 'text');
-  const finalMessage = finalText?.text ?? 'I checked eBird but had trouble formulating a response. Please try again.';
+  const response = finalText?.text ?? 'I checked eBird but had trouble formulating a response. Please try again.';
 
-  conversationHistory.push({
-    role: 'assistant',
-    content: finalMessage
-  });
+  updatedHistory.push({ role: 'assistant', content: response });
 
-  return finalMessage;
+  return { response, history: updatedHistory };
 }
 
 function parseSighting(text) {
@@ -163,40 +149,3 @@ function parseSighting(text) {
   };
 }
 
-async function main() {
-  
-    let pendingSighting = null;
-
-  console.log('Starting Bubo...');
-  const { mcpClient, anthropicTools } = await startMcpClient();
-  console.log(`Connected to eBird. Tools available: ${anthropicTools.map(t => t.name).join(', ')}\n`);
-  console.log('Bubo — Goldcrest Bird Sighting Assistant');
-  console.log('Type your sighting. Type "exit" to quit.\n');
-
-  while (true) {
-    const userInput = await ask('You: ');
-
-    if (userInput.toLowerCase() === 'exit') {
-      console.log('\nBubo: Good birding. Goodbye.');
-      rl.close();
-      process.exit(0);
-    }
-
-    if (pendingSighting && isConfirmation(userInput)) {
-      const saved = await saveSighting(pendingSighting);
-      console.log(saved ? '\n[Sighting saved to database]\n' : '\n[Failed to save sighting — check console for details]\n');
-      pendingSighting = null;
-    }
-
-    const response = await chat(userInput, mcpClient, anthropicTools);
-    console.log(`\nBubo: ${response}\n`);
-
-    if (response.includes('**Possible ID:**')) {
-      pendingSighting = parseSighting(response);
-    }
-
-
-  }
-}
-
-main();

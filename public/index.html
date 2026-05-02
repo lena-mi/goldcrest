@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Goldcrest — Bubo Field Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+
+/* ─── Reset & root ─────────────────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:         #0e0e0e;
+  --bg2:        #111111;
+  --bg3:        #1a1a1a;
+  --border:     #272727;
+  --border2:    #353535;
+  --text:       #e8e4dc;
+  --muted:      #8a8580;
+  --muted2:     #555250;
+  --muted3:     #2a2a2a;
+  --accent:     #c8f07a;
+  --accent-dim: #7a9a45;
+  --px: 'Press Start 2P', monospace;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--px);
+  image-rendering: pixelated;
+  overflow: hidden;
+}
+
+/* ─── Scanline overlay ─────────────────────────────────────────────────────── */
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,0.12) 0px, rgba(0,0,0,0.12) 1px,
+    transparent 1px, transparent 3px
+  );
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* ─── App shell ────────────────────────────────────────────────────────────── */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-width: 900px;
+  margin: 0 auto;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+
+/* ─── Title bar ────────────────────────────────────────────────────────────── */
+
+.titlebar {
+  background: var(--bg3);
+  border-bottom: 2px solid var(--border);
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.titlebar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.titlebar-title {
+  font-size: 7px;
+  color: var(--muted2);
+  letter-spacing: 0.08em;
+  line-height: 1;
+}
+
+.titlebar-title span { color: var(--accent); }
+
+.titlebar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 6px;
+  color: var(--muted2);
+  letter-spacing: 0.08em;
+}
+
+.status-dot {
+  width: 6px; height: 6px;
+  background: var(--muted3);
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+
+.status-dot.connected { background: var(--accent); animation: blink-dot 2s step-end infinite; }
+.status-dot.error     { background: #e05555; }
+
+@keyframes blink-dot { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.wm-btns { display: flex; gap: 4px; }
+.wm-btn {
+  width: 10px; height: 10px;
+  background: var(--border);
+  border: 1px solid var(--border2);
+  font-size: 0;
+  cursor: default;
+}
+
+/* ─── Body layout ──────────────────────────────────────────────────────────── */
+
+.body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ─── Sidebar ──────────────────────────────────────────────────────────────── */
+
+.sidebar {
+  width: 80px;
+  background: var(--bg2);
+  border-right: 2px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 6px;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.owl-frame {
+  width: 56px; height: 64px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* CRT flicker on owl */
+.owl-frame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg, rgba(0,0,0,0.2) 0px, rgba(0,0,0,0.2) 1px,
+    transparent 1px, transparent 2px
+  );
+  pointer-events: none;
+}
+
+canvas#bubo {
+  width: 48px; height: 48px;
+  display: block;
+  position: relative; z-index: 1;
+}
+
+.sidebar-rule {
+  width: 100%; height: 1px;
+  background: var(--border);
+}
+
+.stat {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+}
+
+.stat-label {
+  font-size: 5px;
+  color: var(--muted2);
+  letter-spacing: 0.1em;
+}
+
+.stat-val {
+  font-size: 9px;
+  color: var(--text);
+}
+
+.stat-val.accent { color: var(--accent); }
+
+.conf-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.conf-bar-fill {
+  height: 100%;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--accent) 0px, var(--accent) 3px,
+    var(--accent-dim) 3px, var(--accent-dim) 4px
+  );
+  width: 0%;
+  transition: width 0.4s steps(10);
+}
+
+/* ─── Chat main ────────────────────────────────────────────────────────────── */
+
+.chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ─── Messages ─────────────────────────────────────────────────────────────── */
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 14px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--bg);
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent 0px, transparent 19px,
+    #141414 19px, #141414 20px
+  );
+  scroll-behavior: smooth;
+}
+
+.messages::-webkit-scrollbar { width: 4px; }
+.messages::-webkit-scrollbar-track { background: var(--bg); }
+.messages::-webkit-scrollbar-thumb { background: var(--border2); }
+
+.msg-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  animation: msg-in 0.15s steps(3) forwards;
+}
+
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.msg-row.user { align-items: flex-end; }
+.msg-row.bubo { align-items: flex-start; }
+
+.msg-who {
+  font-size: 5px;
+  color: var(--muted2);
+  letter-spacing: 0.1em;
+  padding: 0 3px;
+}
+
+.bubble {
+  font-size: 7px;
+  line-height: 2.2;
+  padding: 9px 12px;
+  max-width: 82%;
+  border: 1px solid;
+  letter-spacing: 0.04em;
+}
+
+.user .bubble {
+  background: var(--bg3);
+  border-color: var(--border2);
+  color: var(--text);
+}
+
+.bubo .bubble {
+  background: var(--bg2);
+  border-color: var(--border);
+  color: var(--muted);
+}
+
+/* ─── Typing indicator ─────────────────────────────────────────────────────── */
+
+.typing-row { align-items: flex-start; }
+
+.typing-bubble {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.typing-dot {
+  width: 4px; height: 4px;
+  background: var(--muted2);
+  animation: typing-bounce 1.2s infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing-bounce {
+  0%,60%,100% { transform: translateY(0); background: var(--muted2); }
+  30% { transform: translateY(-4px); background: var(--accent); }
+}
+
+/* ─── eBird loader ─────────────────────────────────────────────────────────── */
+
+.ebird-row {
+  font-size: 6px;
+  color: var(--accent-dim);
+  letter-spacing: 0.06em;
+  padding: 4px 3px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#ebirdBar { color: var(--accent-dim); letter-spacing: 1px; }
+
+/* ─── ID card ──────────────────────────────────────────────────────────────── */
+
+.id-card {
+  background: var(--bg2);
+  border: 2px solid var(--accent);
+  padding: 10px 12px;
+  max-width: 90%;
+  position: relative;
+}
+
+.id-dither {
+  font-size: 6px;
+  color: #2a2a1a;
+  letter-spacing: -0.5px;
+  line-height: 1;
+  margin-bottom: 8px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.id-badge {
+  font-size: 5px;
+  color: var(--accent-dim);
+  letter-spacing: 0.1em;
+  border: 1px solid #3a4a1a;
+  display: inline-block;
+  padding: 2px 7px;
+  margin-bottom: 7px;
+  background: #0e1408;
+}
+
+.id-name {
+  font-size: 8px;
+  color: var(--text);
+  letter-spacing: 0.06em;
+  line-height: 2;
+  margin-bottom: 2px;
+}
+
+.id-sci {
+  font-size: 6px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+}
+
+.id-conf-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.id-conf-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.id-conf-fill {
+  height: 100%;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--accent) 0px, var(--accent) 4px,
+    var(--accent-dim) 4px, var(--accent-dim) 5px
+  );
+}
+
+.id-conf-num {
+  font-size: 6px;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.id-reason {
+  font-size: 6px;
+  color: var(--muted);
+  line-height: 2.4;
+  letter-spacing: 0.03em;
+  margin-bottom: 8px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 6px 0;
+}
+
+.id-ebird {
+  font-size: 5px;
+  color: var(--muted2);
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+}
+
+.id-ebird span { color: var(--accent-dim); }
+
+.id-btns { display: flex; gap: 6px; }
+
+.px-btn {
+  font-family: var(--px);
+  font-size: 6px;
+  letter-spacing: 0.06em;
+  padding: 7px 10px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-log {
+  background: var(--accent);
+  color: var(--bg);
+  box-shadow: 2px 2px 0 var(--accent-dim);
+}
+
+.btn-log:hover   { background: #d4f88a; }
+.btn-log:active  { box-shadow: none; transform: translate(2px,2px); }
+
+.btn-skip {
+  background: transparent;
+  color: var(--muted2);
+  border: 1px solid var(--border2);
+}
+
+.btn-skip:hover { color: var(--muted); border-color: var(--muted2); }
+
+/* ─── Unidentified card ────────────────────────────────────────────────────── */
+
+.unid-card {
+  background: var(--bg2);
+  border: 2px solid var(--muted2);
+  padding: 10px 12px;
+  max-width: 90%;
+}
+
+.unid-badge {
+  font-size: 5px;
+  color: var(--muted2);
+  letter-spacing: 0.1em;
+  border: 1px solid var(--border2);
+  display: inline-block;
+  padding: 2px 7px;
+  margin-bottom: 8px;
+}
+
+.unid-body {
+  font-size: 6px;
+  color: var(--muted);
+  line-height: 2.4;
+  letter-spacing: 0.03em;
+}
+
+/* ─── Status bar ───────────────────────────────────────────────────────────── */
+
+.statusbar {
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  padding: 5px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.statusbar-blink {
+  width: 6px; height: 6px;
+  background: var(--accent);
+  flex-shrink: 0;
+  animation: blink-dot 1.2s step-end infinite;
+}
+
+.statusbar-blink.off { background: var(--muted3); animation: none; }
+
+.statusbar-text {
+  font-size: 5px;
+  color: var(--muted2);
+  letter-spacing: 0.1em;
+}
+
+.statusbar-right {
+  margin-left: auto;
+  font-size: 5px;
+  color: var(--muted3);
+  letter-spacing: 0.06em;
+}
+
+.statusbar-right span { color: var(--accent-dim); }
+
+/* ─── Input area ───────────────────────────────────────────────────────────── */
+
+.input-row {
+  display: flex;
+  border-top: 2px solid var(--border);
+  background: var(--bg2);
+  flex-shrink: 0;
+}
+
+.chat-input {
+  flex: 1;
+  background: var(--bg);
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--px);
+  font-size: 7px;
+  padding: 12px 14px;
+  letter-spacing: 0.04em;
+  caret-color: var(--accent);
+  line-height: 1.8;
+}
+
+.chat-input::placeholder { color: var(--muted3); }
+.chat-input:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.send-btn {
+  background: var(--bg3);
+  border: none;
+  border-left: 1px solid var(--border);
+  color: var(--accent);
+  font-family: var(--px);
+  font-size: 6px;
+  padding: 0 16px;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+
+.send-btn:hover   { background: var(--border); }
+.send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ── Title bar ────────────────────────────────────────────────────────── -->
+  <div class="titlebar">
+    <div class="titlebar-left">
+      <div class="titlebar-title"><span>GOLDCREST</span> — BUBO FIELD ASSISTANT v1.0</div>
+    </div>
+    <div class="titlebar-right">
+      <div class="status-indicator">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">CONNECTING...</span>
+      </div>
+      <div class="wm-btns">
+        <div class="wm-btn"></div>
+        <div class="wm-btn"></div>
+        <div class="wm-btn"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Body ─────────────────────────────────────────────────────────────── -->
+  <div class="body">
+
+    <!-- ── Sidebar ────────────────────────────────────────────────────────── -->
+    <div class="sidebar">
+      <div class="owl-frame">
+        <canvas id="bubo" width="48" height="48"></canvas>
+      </div>
+
+      <div class="sidebar-rule"></div>
+
+      <div class="stat">
+        <div class="stat-label">CONF</div>
+        <div class="stat-val accent" id="sConf">--</div>
+      </div>
+
+      <div class="conf-bar">
+        <div class="conf-bar-fill" id="sConfBar"></div>
+      </div>
+
+      <div class="sidebar-rule"></div>
+
+      <div class="stat">
+        <div class="stat-label">Q LEFT</div>
+        <div class="stat-val" id="sQLft">3</div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-label">SESS</div>
+        <div class="stat-val" id="sSess">001</div>
+      </div>
+    </div>
+
+    <!-- ── Chat main ──────────────────────────────────────────────────────── -->
+    <div class="chat-main">
+      <div class="messages" id="messages"></div>
+
+      <div class="statusbar">
+        <div class="statusbar-blink off" id="sbBlink"></div>
+        <div class="statusbar-text" id="sbText">READY</div>
+        <div class="statusbar-right">Q REMAINING · <span id="sbQLft">3</span></div>
+      </div>
+
+      <div class="input-row">
+        <input
+          class="chat-input"
+          id="chatInput"
+          placeholder="DESCRIBE YOUR SIGHTING..."
+          autocomplete="off"
+          disabled
+        />
+        <button class="send-btn" id="sendBtn" disabled>SEND ▶</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+
+// ─── Section 1: Pixel owl ─────────────────────────────────────────────────────
+//
+// Bubo is drawn on a <canvas> element using a 2D grid of colour codes.
+// Each cell in the grid maps to one "pixel" scaled up 4×.
+// We define multiple frames and cycle through them to create animation.
+
+const S = 4;     // scale — each grid cell = 4×4 real pixels
+const OW = 12;   // owl grid width  (columns)
+const OH = 12;   // owl grid height (rows)
+
+// Colour palette — warm browns matching the reference image
+const _ = null;        // transparent
+const B1 = '#2d1a0e';  // darkest brown
+const B2 = '#4a2c12';  // dark brown
+const B3 = '#7a4a1e';  // mid brown
+const B4 = '#a06828';  // warm brown
+const B5 = '#c49040';  // golden brown
+const C1 = '#f0e090';  // cream
+const C2 = '#faf4c8';  // bright cream
+const Y1 = '#d4a820';  // amber
+const Y2 = '#e8c840';  // yellow
+const EK = '#1a0e06';  // near-black pupils
+const G1 = '#3d2810';  // branch dark
+const G2 = '#6b4020';  // branch mid
+
+// Each frame is a 12-row × 12-column grid
+const FRAMES = {
+  idle: [
+    [_,  _,  B2, B1, _,  _,  B1, B2, _,  _,  _,  _],
+    [_,  B2, B3, B2, B1, B1, B2, B3, B2, _,  _,  _],
+    [_,  B1, B4, B5, B3, B3, B5, B4, B1, _,  _,  _],
+    [B1, B3, B5, C1, Y2, Y2, C1, B5, B3, B1, _,  _],
+    [B1, B3, C1, Y2, EK, Y2, Y2, EK, Y2, C1, B1, _],
+    [B1, B3, C1, Y2, Y2, Y1, Y1, Y2, Y2, C1, B1, _],
+    [_,  B1, B4, C1, Y1, Y1, Y1, Y1, C1, B4, _,  _],
+    [_,  B1, B3, C1, C2, C2, C2, C2, C1, B3, _,  _],
+    [_,  B1, B3, C1, C2, C2, C2, C2, C1, B3, _,  _],
+    [_,  B1, B2, B3, B3, B3, B3, B3, B2, B1, _,  _],
+    [_,  B1, G1, G2, G2, G2, G2, G2, G1, B1, B1, _],
+    [_,  _,  B1, G1, G2, G2, G2, G1, G2, G2, B1, _],
+  ],
+  blink: [
+    [_,  _,  B2, B1, _,  _,  B1, B2, _,  _,  _,  _],
+    [_,  B2, B3, B2, B1, B1, B2, B3, B2, _,  _,  _],
+    [_,  B1, B4, B5, B3, B3, B5, B4, B1, _,  _,  _],
+    [B1, B3, B5, C1, Y2, Y2, C1, B5, B3, B1, _,  _],
+    [B1, B3, C1, B4, B4, Y1, Y1, B4, B4, C1, B1, _],
+    [B1, B3, C1, C1, C1, Y1, Y1, C1, C1, C1, B1, _],
+    [_,  B1, B4, C1, Y1, Y1, Y1, Y1, C1, B4, _,  _],
+    [_,  B1, B3, C1, C2, C2, C2, C2, C1, B3, _,  _],
+    [_,  B1, B3, C1, C2, C2, C2, C2, C1, B3, _,  _],
+    [_,  B1, B2, B3, B3, B3, B3, B3, B2, B1, _,  _],
+    [_,  B1, G1, G2, G2, G2, G2, G2, G1, B1, B1, _],
+    [_,  _,  B1, G1, G2, G2, G2, G1, G2, G2, B1, _],
+  ],
+  look_r: [
+    [_,  _,  B2, B1, _,  _,  B1, B2, _,  _,  _,  _],
+    [_,  B2, B3, B2, B1, B1, B2, B3, B2, _,  _,  _],
+    [_,  B1, B4, B5, B3, B3, B5, B4, B1, _,  _,  _],
+    [B1, B3, B5, C1, Y2, Y2, C1, B5, B3, B1, _,  _],
+    [B1, B3, C1, Y2, Y2, EK, Y2, Y2, EK, C1, B1, _],
+    [B1, B3, C1, Y2, Y2, Y1, Y1, Y2, Y2, C1, B1, _],
+    [_,  B1, B4, C1, Y1, Y1, Y1, Y1, C1, B4, _,  _],
+    [_,  B1, B3, C1, C2, C2, C2, C2, C1, B3, _,  _],
+    [_,  B1, B3, C1, C2, C2, C2, C2, C1, B3, _,  _],
+    [_,  B1, B2, B3, B3, B3, B3, B3, B2, B1, _,  _],
+    [_,  B1, G1, G2, G2, G2, G2, G2, G1, B1, B1, _],
+    [_,  _,  B1, G1, G2, G2, G2, G1, G2, G2, B1, _],
+  ],
+};
+
+const cv  = document.getElementById('bubo');
+const ctx = cv.getContext('2d');
+cv.width  = OW * S;
+cv.height = OH * S;
+
+function drawFrame(name) {
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  const f = FRAMES[name];
+  for (let r = 0; r < OH; r++)
+    for (let c = 0; c < OW; c++) {
+      if (!f[r][c]) continue;
+      ctx.fillStyle = f[r][c];
+      ctx.fillRect(c * S, r * S, S, S);
+    }
+}
+
+// Animation sequence — each step is { frame name, duration ms }
+const SEQ = [
+  { f:'idle',   d:2400 },
+  { f:'blink',  d:100  },
+  { f:'idle',   d:800  },
+  { f:'blink',  d:100  },
+  { f:'idle',   d:1600 },
+  { f:'look_r', d:900  },
+  { f:'idle',   d:600  },
+  { f:'blink',  d:100  },
+  { f:'idle',   d:2200 },
+];
+
+let seqIdx = 0;
+function animateOwl() {
+  const step = SEQ[seqIdx];
+  drawFrame(step.f);
+  seqIdx = (seqIdx + 1) % SEQ.length;
+  setTimeout(animateOwl, step.d);
+}
+animateOwl();
+
+
+// ─── Section 2: State ─────────────────────────────────────────────────────────
+//
+// Everything the app needs to remember between messages.
+// `history` is the array we send to the server on every request.
+// The server appends to it and sends it back — we replace our copy.
+
+let history        = [];   // full conversation history
+let questionsLeft  = 3;    // tracks Bubo's 3-question limit
+let sessionNum     = 1;    // display only
+let waitingForResp = false; // true while fetch is in flight — blocks double-sends
+let ebirdAnimFrame = null; // ref to the eBird loader interval
+
+
+// ─── Section 3: DOM helpers ───────────────────────────────────────────────────
+
+const msgsEl    = document.getElementById('messages');
+const inputEl   = document.getElementById('chatInput');
+const sendBtnEl = document.getElementById('sendBtn');
+const sConfEl   = document.getElementById('sConf');
+const sConfBar  = document.getElementById('sConfBar');
+const sQLftEl   = document.getElementById('sQLft');
+const sbBlinkEl = document.getElementById('sbBlink');
+const sbTextEl  = document.getElementById('sbText');
+const sbQLftEl  = document.getElementById('sbQLft');
+const statusDot = document.getElementById('statusDot');
+const statusTxt = document.getElementById('statusText');
+
+function scrollToBottom() {
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+}
+
+// Add a plain text message bubble to the chat
+function addBubble(who, text) {
+  const row = document.createElement('div');
+  row.className = `msg-row ${who}`;
+  row.innerHTML = `
+    <div class="msg-who">[ ${who === 'user' ? 'YOU' : 'BUBO'} ]</div>
+    <div class="bubble">${text.replace(/\n/g, '<br>')}</div>
+  `;
+  msgsEl.appendChild(row);
+  scrollToBottom();
+  return row;
+}
+
+// Show the animated dots while waiting for Bubo to respond
+function showTyping() {
+  const row = document.createElement('div');
+  row.className = 'msg-row bubo typing-row';
+  row.id = 'typingRow';
+  row.innerHTML = `
+    <div class="msg-who">[ BUBO ]</div>
+    <div class="typing-bubble">
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    </div>
+  `;
+  msgsEl.appendChild(row);
+  scrollToBottom();
+}
+
+function hideTyping() {
+  const row = document.getElementById('typingRow');
+  if (row) row.remove();
+}
+
+// Show the eBird ▓░░░░ loader inside chat
+function showEbirdLoader() {
+  const row = document.createElement('div');
+  row.className = 'msg-row bubo';
+  row.id = 'ebirdRow';
+  row.innerHTML = `
+    <div class="msg-who">[ BUBO ]</div>
+    <div class="ebird-row">
+      QUERYING EBIRD
+      <span id="ebirdBar">▓░░░░░░░░░░░░░░░</span>
+    </div>
+  `;
+  msgsEl.appendChild(row);
+  scrollToBottom();
+
+  // Animate the bar
+  let dc = 0;
+  ebirdAnimFrame = setInterval(() => {
+    const bar = document.getElementById('ebirdBar');
+    if (!bar) return;
+    dc = (dc + 1) % 16;
+    bar.textContent = '▓'.repeat(dc + 1) + '░'.repeat(15 - dc);
+  }, 130);
+}
+
+function hideEbirdLoader() {
+  clearInterval(ebirdAnimFrame);
+  const row = document.getElementById('ebirdRow');
+  if (row) row.remove();
+}
+
+// Update the sidebar confidence display
+function updateConf(score) {
+  if (score === null) return;
+  sConfEl.textContent = score;
+  sConfBar.style.width = score + '%';
+}
+
+// Update questions-left counters (sidebar + status bar)
+function updateQLft(n) {
+  questionsLeft = n;
+  sQLftEl.textContent = n;
+  sbQLftEl.textContent = n;
+}
+
+// Set the status bar text and blink state
+function setStatus(text, blinking = false) {
+  sbTextEl.textContent = text;
+  sbBlinkEl.classList.toggle('off', !blinking);
+}
+
+// Enable or disable the input
+function setInputEnabled(enabled) {
+  inputEl.disabled  = !enabled;
+  sendBtnEl.disabled = !enabled;
+  if (enabled) inputEl.focus();
+}
+
+
+// ─── Section 4: Response parser ───────────────────────────────────────────────
+//
+// Bubo's response is plain text from Claude.
+// We inspect it to decide how to render it.
+//
+// Three possible formats:
+//   A) Contains "**Possible ID:**"  → render as ID card
+//   B) Contains "**Status:** Unidentified" → render as unidentified card
+//   C) Anything else → render as plain bubble
+
+function parseAndRender(text) {
+
+  // ── A: ID card ──
+  if (text.includes('**Possible ID:**')) {
+    const idMatch   = text.match(/\*\*Possible ID:\*\*\s+(.+?)\s+\(\*(.+?)\*\)/);
+    const confMatch = text.match(/\*\*Confidence:\*\*\s+(\d+)\/100/);
+    const reaMatch  = text.match(/\*\*Reason:\*\*\s+([\s\S]+?)(?=\*\*To confirm:|$)/);
+    const confMatch2 = text.match(/\*\*To confirm:\*\*\s+([\s\S]+?)(?=\n\*\*|$)/);
+
+    const commonName = idMatch?.[1]?.trim()  ?? 'Unknown species';
+    const sciName    = idMatch?.[2]?.trim()  ?? '';
+    const conf       = confMatch ? parseInt(confMatch[1]) : null;
+    const reason     = reaMatch?.[1]?.trim() ?? '';
+    const toConfirm  = confMatch2?.[1]?.trim() ?? '';
+
+    if (conf !== null) updateConf(conf);
+
+    const row = document.createElement('div');
+    row.className = 'msg-row bubo';
+    row.innerHTML = `
+      <div class="msg-who">[ BUBO ]</div>
+      <div class="id-card">
+        <div class="id-dither">▓▒░▓▒░▓▒░▓▒░▓▒░▓▒░▓▒░▓▒░▓▒░▓▒░▓▒░▓▒░▓▒░▓▒░</div>
+        <div class="id-badge">▶ SPECIES MATCH</div>
+        <div class="id-name">${commonName.toUpperCase()}</div>
+        <div class="id-sci">${sciName}</div>
+        <div class="id-conf-row">
+          <div class="id-conf-bar">
+            <div class="id-conf-fill" style="width:${conf ?? 0}%"></div>
+          </div>
+          <div class="id-conf-num">${conf ?? '?'}/100</div>
+        </div>
+        <div class="id-reason">${reason.replace(/\n/g,'<br>')}</div>
+        ${toConfirm ? `<div class="id-reason" style="border-top:none;padding-top:0">TO CONFIRM: ${toConfirm}</div>` : ''}
+        <div class="id-btns">
+          <button class="px-btn btn-log" onclick="handleLog('${commonName.replace(/'/g,"\\'")}', '${sciName.replace(/'/g,"\\'")}', ${conf})">▶ LOG IT</button>
+          <button class="px-btn btn-skip" onclick="handleSkip()">✕ NOT SURE</button>
+        </div>
+      </div>
+    `;
+    msgsEl.appendChild(row);
+    scrollToBottom();
+    return;
+  }
+
+  // ── B: Unidentified card ──
+  if (text.includes('**Status:** Unidentified')) {
+    const evidMatch = text.match(/\*\*Evidence collected:\*\*([\s\S]+?)(?=\*\*Suggested|$)/);
+    const nextMatch = text.match(/\*\*Suggested next step:\*\*\s+([\s\S]+?)$/);
+    const evidence  = evidMatch?.[1]?.trim() ?? '';
+    const next      = nextMatch?.[1]?.trim() ?? '';
+
+    const row = document.createElement('div');
+    row.className = 'msg-row bubo';
+    row.innerHTML = `
+      <div class="msg-who">[ BUBO ]</div>
+      <div class="unid-card">
+        <div class="unid-badge">✕ UNIDENTIFIED</div>
+        <div class="unid-body">
+          ${evidence ? evidence.replace(/^[-•]\s*/gm,'').replace(/\n/g,'<br>') : ''}
+          ${next ? `<br><br>NEXT: ${next}` : ''}
+        </div>
+      </div>
+    `;
+    msgsEl.appendChild(row);
+    scrollToBottom();
+    return;
+  }
+
+  // ── C: Plain bubble ──
+  addBubble('bubo', text);
+}
+
+
+// ─── Section 5: Log / Skip handlers ──────────────────────────────────────────
+
+function handleLog(commonName, sciName, conf) {
+  // Phase 3 will save to Supabase here.
+  // For now, just confirm in chat.
+  addBubble('bubo',
+    `SIGHTING LOGGED\n${commonName.toUpperCase()}\nConf: ${conf}/100\n\nPhase 3 will save this to the database.`
+  );
+  // Disable the buttons on the card so it can't be logged twice
+  document.querySelectorAll('.btn-log, .btn-skip').forEach(b => b.disabled = true);
+}
+
+function handleSkip() {
+  addBubble('user', 'NOT SURE — TELL ME MORE');
+  sendMessage('I am not sure about that identification. Can you ask me another question to narrow it down?');
+}
+
+
+// ─── Section 6: Send message ──────────────────────────────────────────────────
+//
+// This is the core loop:
+//   1. Read input
+//   2. Add user bubble to chat
+//   3. Show typing indicator
+//   4. POST to /chat with message + history
+//   5. Hide typing, render Bubo's response
+//   6. Store the updated history the server sends back
+
+async function sendMessage(overrideText) {
+  const text = overrideText ?? inputEl.value.trim();
+  if (!text || waitingForResp) return;
+
+  if (!overrideText) {
+    inputEl.value = '';
+    addBubble('user', text);
+  }
+
+  waitingForResp = true;
+  setInputEnabled(false);
+  showTyping();
+  setStatus('BUBO IS THINKING...', true);
+
+  // Decrement questions counter if it's a clarifying exchange
+  if (questionsLeft > 0 && !overrideText) {
+    updateQLft(questionsLeft - 1);
+  }
+
+  try {
+    const res = await fetch('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, history })
+    });
+
+    const data = await res.json();
+
+    hideTyping();
+    hideEbirdLoader();
+
+    if (!res.ok) {
+      addBubble('bubo', `ERROR: ${data.error ?? 'Something went wrong.'}`);
+    } else {
+      history = data.history;  // ← replace our history with the updated version
+      parseAndRender(data.response);
+    }
+
+  } catch (err) {
+    hideTyping();
+    hideEbirdLoader();
+    addBubble('bubo', 'CONNECTION ERROR. CHECK THAT THE SERVER IS RUNNING.');
+    console.error(err);
+  }
+
+  waitingForResp = false;
+  setInputEnabled(true);
+  setStatus('READY');
+}
+
+
+// ─── Section 7: Event listeners ───────────────────────────────────────────────
+
+sendBtnEl.addEventListener('click', () => sendMessage());
+
+inputEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+
+// ─── Section 8: Status check on load ─────────────────────────────────────────
+//
+// On page load, hit /status to see if eBird is connected.
+// If yes, enable the input and show a welcome message.
+// If no, retry every 2 seconds until it's ready.
+
+function checkStatus() {
+  fetch('/status')
+    .then(r => r.json())
+    .then(data => {
+      if (data.connected) {
+        statusDot.className = 'status-dot connected';
+        statusTxt.textContent = 'EBIRD CONNECTED';
+        setInputEnabled(true);
+        setStatus('READY');
+
+        // Welcome message
+        addBubble('bubo', 'READY.\n\nDescribe what you saw.\nHabitat, size, any markings.\nEven rough details help.');
+      } else {
+        statusDot.className = 'status-dot';
+        statusTxt.textContent = 'CONNECTING...';
+        setTimeout(checkStatus, 2000);
+      }
+    })
+    .catch(() => {
+      statusDot.className = 'status-dot error';
+      statusTxt.textContent = 'SERVER OFFLINE';
+      setStatus('SERVER NOT FOUND — RUN NODE SERVER.JS');
+      setTimeout(checkStatus, 3000);
+    });
+}
+
+checkStatus();
+
+</script>
+</body>
+</html>
