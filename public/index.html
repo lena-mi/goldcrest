@@ -3,565 +3,296 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Goldcrest — Bubo Field Assistant</title>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<title>Goldcrest — Bubo</title>
 <style>
-
-/* ─── Reset & root ─────────────────────────────────────────────────────────── */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:         #0e0e0e;
-  --bg2:        #111111;
-  --bg3:        #1a1a1a;
-  --border:     #272727;
-  --border2:    #353535;
-  --text:       #e8e4dc;
-  --muted:      #8a8580;
-  --muted2:     #555250;
-  --muted3:     #2a2a2a;
-  --accent:     #c8f07a;
-  --accent-dim: #7a9a45;
-  --px: 'Press Start 2P', monospace;
+  --bg:     #1c1c1c;
+  --bg2:    #252525;
+  --bg3:    #2e2e2e;
+  --border: #383838;
+  --text:   #e8e4dc;
+  --muted:  #888;
+  --accent: #c8f07a;
 }
 
 html, body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
-  font-family: var(--px);
-  image-rendering: pixelated;
-  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
 }
-
-/* ─── Scanline overlay ─────────────────────────────────────────────────────── */
-
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0,0,0,0.12) 0px, rgba(0,0,0,0.12) 1px,
-    transparent 1px, transparent 3px
-  );
-  pointer-events: none;
-  z-index: 1000;
-}
-
-/* ─── App shell ────────────────────────────────────────────────────────────── */
 
 .app {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  max-width: 900px;
+  max-width: 480px;
   margin: 0 auto;
   border-left: 1px solid var(--border);
   border-right: 1px solid var(--border);
 }
 
-/* ─── Title bar ────────────────────────────────────────────────────────────── */
+/* ── Header ──────────────────────────────────────────────────────────────── */
 
-.titlebar {
-  background: var(--bg3);
-  border-bottom: 2px solid var(--border);
-  padding: 8px 14px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-}
-
-.titlebar-left {
+.header {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.titlebar-title {
-  font-size: 7px;
-  color: var(--muted2);
-  letter-spacing: 0.08em;
-  line-height: 1;
-}
-
-.titlebar-title span { color: var(--accent); }
-
-.titlebar-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.status-indicator {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 6px;
-  color: var(--muted2);
-  letter-spacing: 0.08em;
-}
-
-.status-dot {
-  width: 6px; height: 6px;
-  background: var(--muted3);
-  flex-shrink: 0;
-  transition: background 0.3s;
-}
-
-.status-dot.connected { background: var(--accent); animation: blink-dot 2s step-end infinite; }
-.status-dot.error     { background: #e05555; }
-
-@keyframes blink-dot { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-.wm-btns { display: flex; gap: 4px; }
-.wm-btn {
-  width: 10px; height: 10px;
-  background: var(--border);
-  border: 1px solid var(--border2);
-  font-size: 0;
-  cursor: default;
-}
-
-/* ─── Body layout ──────────────────────────────────────────────────────────── */
-
-.body {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-}
-
-/* ─── Sidebar ──────────────────────────────────────────────────────────────── */
-
-.sidebar {
-  width: 80px;
-  background: var(--bg2);
-  border-right: 2px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 14px 6px;
-  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 
-.owl-frame {
-  width: 56px; height: 64px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
+.header-owl {
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  flex-shrink: 0;
 }
 
-/* CRT flicker on owl */
-.owl-frame::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg, rgba(0,0,0,0.2) 0px, rgba(0,0,0,0.2) 1px,
-    transparent 1px, transparent 2px
-  );
-  pointer-events: none;
+.header-label {
+  font-size: 15px;
+  font-weight: 500;
 }
 
-#bubo {
-  width: 48px; height: 48px;
-  display: block;
-  position: relative; z-index: 1;
-  image-rendering: pixelated;
+.header-label em {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--muted);
 }
 
-.sidebar-rule {
-  width: 100%; height: 1px;
-  background: var(--border);
-}
+.header-conf { color: var(--accent); }
 
-.stat {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  width: 100%;
-}
-
-.stat-label {
-  font-size: 5px;
-  color: var(--muted2);
-  letter-spacing: 0.1em;
-}
-
-.stat-val {
-  font-size: 9px;
-  color: var(--text);
-}
-
-.stat-val.accent { color: var(--accent); }
-
-.conf-bar {
-  width: 100%;
-  height: 6px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  overflow: hidden;
-}
-
-.conf-bar-fill {
-  height: 100%;
-  background: repeating-linear-gradient(
-    90deg,
-    var(--accent) 0px, var(--accent) 3px,
-    var(--accent-dim) 3px, var(--accent-dim) 4px
-  );
-  width: 0%;
-  transition: width 0.4s steps(10);
-}
-
-/* ─── Chat main ────────────────────────────────────────────────────────────── */
-
-.chat-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-/* ─── Messages ─────────────────────────────────────────────────────────────── */
+/* ── Messages ────────────────────────────────────────────────────────────── */
 
 .messages {
   flex: 1;
   overflow-y: auto;
-  padding: 14px 14px 8px;
+  padding: 20px 16px 12px;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  background: var(--bg);
-  background-image: repeating-linear-gradient(
-    0deg,
-    transparent 0px, transparent 19px,
-    #141414 19px, #141414 20px
-  );
   scroll-behavior: smooth;
 }
 
 .messages::-webkit-scrollbar { width: 4px; }
-.messages::-webkit-scrollbar-track { background: var(--bg); }
-.messages::-webkit-scrollbar-thumb { background: var(--border2); }
+.messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-.msg-row {
+.msg-bubo {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  animation: msg-in 0.15s steps(3) forwards;
+  gap: 10px;
+  max-width: 88%;
 }
 
-@keyframes msg-in {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.msg-row.user { align-items: flex-end; }
-.msg-row.bubo { align-items: flex-start; }
-
-.msg-who {
-  font-size: 5px;
-  color: var(--muted2);
-  letter-spacing: 0.1em;
-  padding: 0 3px;
-}
-
-.bubble {
-  font-size: 7px;
-  line-height: 2.2;
-  padding: 9px 12px;
-  max-width: 82%;
-  border: 1px solid;
-  letter-spacing: 0.04em;
-}
-
-.user .bubble {
-  background: var(--bg3);
-  border-color: var(--border2);
+.msg-bubo-text {
+  font-size: 15px;
+  line-height: 1.65;
   color: var(--text);
 }
 
-.bubo .bubble {
-  background: var(--bg2);
-  border-color: var(--border);
-  color: var(--muted);
+.msg-user {
+  align-self: flex-end;
+  background: var(--bg3);
+  color: var(--text);
+  padding: 11px 16px;
+  border-radius: 20px 20px 4px 20px;
+  font-size: 15px;
+  line-height: 1.5;
+  max-width: 80%;
 }
 
-/* ─── Typing indicator ─────────────────────────────────────────────────────── */
+/* ── Progress dots ───────────────────────────────────────────────────────── */
 
-.typing-row { align-items: flex-start; }
-
-.typing-bubble {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  padding: 10px 14px;
+.progress-row {
   display: flex;
-  gap: 5px;
   align-items: center;
+  gap: 5px;
 }
+
+.progress-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.progress-dot.done { background: var(--text); }
+
+.progress-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── Quick-reply buttons ─────────────────────────────────────────────────── */
+
+.quick-replies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.qr-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 20px;
+  padding: 8px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.qr-btn:hover    { background: var(--bg3); border-color: var(--muted); }
+.qr-btn.picked   { background: var(--bg3); border-color: var(--text); }
+.qr-btn:disabled { opacity: 0.35; cursor: default; }
+
+.qr-done {
+  margin-top: 4px;
+  color: var(--muted);
+  border-style: dashed;
+  width: 100%;
+}
+
+.qr-done:not(:disabled) {
+  color: var(--text);
+  border-style: solid;
+}
+
+/* ── ID card ─────────────────────────────────────────────────────────────── */
+
+.id-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.id-card-label { font-size: 13px; color: var(--muted); }
+
+.id-card-name {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.id-card-photo {
+  width: 200px;
+  height: 155px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: var(--bg3);
+  display: block;
+}
+
+.id-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.btn-log {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 22px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.12s;
+}
+
+.btn-log:hover    { border-color: var(--muted); }
+.btn-log:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-skip {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  padding: 10px 14px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.btn-skip:hover    { color: var(--text); }
+.btn-skip:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Unidentified card ───────────────────────────────────────────────────── */
+
+.unid-card { display: flex; flex-direction: column; gap: 6px; }
+.unid-label { font-size: 13px; color: var(--muted); }
+.unid-body  { font-size: 14px; line-height: 1.7; color: var(--muted); }
+
+/* ── Typing indicator ────────────────────────────────────────────────────── */
+
+.typing { display: flex; gap: 4px; align-items: center; padding: 6px 0; }
 
 .typing-dot {
-  width: 4px; height: 4px;
-  background: var(--muted2);
-  animation: typing-bounce 1.2s infinite;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+  animation: tdot 1.2s infinite;
 }
 .typing-dot:nth-child(2) { animation-delay: 0.2s; }
 .typing-dot:nth-child(3) { animation-delay: 0.4s; }
 
-@keyframes typing-bounce {
-  0%,60%,100% { transform: translateY(0); background: var(--muted2); }
-  30% { transform: translateY(-4px); background: var(--accent); }
+@keyframes tdot {
+  0%,60%,100% { transform: translateY(0);    opacity: 0.5; }
+  30%          { transform: translateY(-5px); opacity: 1;   }
 }
 
-/* ─── eBird loader ─────────────────────────────────────────────────────────── */
-
-.ebird-row {
-  font-size: 6px;
-  color: var(--accent-dim);
-  letter-spacing: 0.06em;
-  padding: 4px 3px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-#ebirdBar { color: var(--accent-dim); letter-spacing: 1px; }
-
-/* ─── ID card ──────────────────────────────────────────────────────────────── */
-
-.id-card {
-  background: var(--bg2);
-  border: 2px solid var(--accent);
-  padding: 10px 12px;
-  max-width: 90%;
-  position: relative;
-}
-
-.id-dither {
-  font-size: 6px;
-  color: #2a2a1a;
-  letter-spacing: -0.5px;
-  line-height: 1;
-  margin-bottom: 8px;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.id-badge {
-  font-size: 5px;
-  color: var(--accent-dim);
-  letter-spacing: 0.1em;
-  border: 1px solid #3a4a1a;
-  display: inline-block;
-  padding: 2px 7px;
-  margin-bottom: 7px;
-  background: #0e1408;
-}
-
-.id-name {
-  font-size: 8px;
-  color: var(--text);
-  letter-spacing: 0.06em;
-  line-height: 2;
-  margin-bottom: 2px;
-}
-
-.id-sci {
-  font-size: 6px;
-  color: var(--muted);
-  letter-spacing: 0.04em;
-  margin-bottom: 10px;
-}
-
-.id-conf-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.id-conf-bar {
-  flex: 1;
-  height: 8px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  overflow: hidden;
-}
-
-.id-conf-fill {
-  height: 100%;
-  background: repeating-linear-gradient(
-    90deg,
-    var(--accent) 0px, var(--accent) 4px,
-    var(--accent-dim) 4px, var(--accent-dim) 5px
-  );
-}
-
-.id-conf-num {
-  font-size: 6px;
-  color: var(--accent);
-  white-space: nowrap;
-}
-
-.id-reason {
-  font-size: 6px;
-  color: var(--muted);
-  line-height: 2.4;
-  letter-spacing: 0.03em;
-  margin-bottom: 8px;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  padding: 6px 0;
-}
-
-.id-ebird {
-  font-size: 5px;
-  color: var(--muted2);
-  letter-spacing: 0.08em;
-  margin-bottom: 10px;
-}
-
-.id-ebird span { color: var(--accent-dim); }
-
-.id-btns { display: flex; gap: 6px; }
-
-.px-btn {
-  font-family: var(--px);
-  font-size: 6px;
-  letter-spacing: 0.06em;
-  padding: 7px 10px;
-  border: none;
-  cursor: pointer;
-}
-
-.btn-log {
-  background: var(--accent);
-  color: var(--bg);
-  box-shadow: 2px 2px 0 var(--accent-dim);
-}
-
-.btn-log:hover   { background: #d4f88a; }
-.btn-log:active  { box-shadow: none; transform: translate(2px,2px); }
-
-.btn-skip {
-  background: transparent;
-  color: var(--muted2);
-  border: 1px solid var(--border2);
-}
-
-.btn-skip:hover { color: var(--muted); border-color: var(--muted2); }
-
-/* ─── Unidentified card ────────────────────────────────────────────────────── */
-
-.unid-card {
-  background: var(--bg2);
-  border: 2px solid var(--muted2);
-  padding: 10px 12px;
-  max-width: 90%;
-}
-
-.unid-badge {
-  font-size: 5px;
-  color: var(--muted2);
-  letter-spacing: 0.1em;
-  border: 1px solid var(--border2);
-  display: inline-block;
-  padding: 2px 7px;
-  margin-bottom: 8px;
-}
-
-.unid-body {
-  font-size: 6px;
-  color: var(--muted);
-  line-height: 2.4;
-  letter-spacing: 0.03em;
-}
-
-/* ─── Status bar ───────────────────────────────────────────────────────────── */
-
-.statusbar {
-  background: var(--bg2);
-  border-top: 1px solid var(--border);
-  padding: 5px 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.statusbar-blink {
-  width: 6px; height: 6px;
-  background: var(--accent);
-  flex-shrink: 0;
-  animation: blink-dot 1.2s step-end infinite;
-}
-
-.statusbar-blink.off { background: var(--muted3); animation: none; }
-
-.statusbar-text {
-  font-size: 5px;
-  color: var(--muted2);
-  letter-spacing: 0.1em;
-}
-
-.statusbar-right {
-  margin-left: auto;
-  font-size: 5px;
-  color: var(--muted3);
-  letter-spacing: 0.06em;
-}
-
-.statusbar-right span { color: var(--accent-dim); }
-
-/* ─── Input area ───────────────────────────────────────────────────────────── */
+/* ── Input row ───────────────────────────────────────────────────────────── */
 
 .input-row {
   display: flex;
-  border-top: 2px solid var(--border);
-  background: var(--bg2);
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px 14px;
+  border-top: 1px solid var(--border);
   flex-shrink: 0;
 }
 
 .chat-input {
   flex: 1;
-  background: var(--bg);
-  border: none;
-  outline: none;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 22px;
   color: var(--text);
-  font-family: var(--px);
-  font-size: 7px;
-  padding: 12px 14px;
-  letter-spacing: 0.04em;
-  caret-color: var(--accent);
-  line-height: 1.8;
+  font-family: inherit;
+  font-size: 15px;
+  padding: 10px 16px;
+  outline: none;
+  transition: border-color 0.15s;
 }
 
-.chat-input::placeholder { color: var(--muted3); }
-.chat-input:disabled { opacity: 0.4; cursor: not-allowed; }
+.chat-input:focus        { border-color: var(--muted); }
+.chat-input::placeholder { color: var(--muted); }
+.chat-input:disabled     { opacity: 0.4; cursor: not-allowed; }
 
 .send-btn {
+  width: 40px; height: 40px;
+  border-radius: 50%;
   background: var(--bg3);
-  border: none;
-  border-left: 1px solid var(--border);
-  color: var(--accent);
-  font-family: var(--px);
-  font-size: 6px;
-  padding: 0 16px;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 18px;
   cursor: pointer;
-  letter-spacing: 0.06em;
+  display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  transition: border-color 0.12s;
 }
 
-.send-btn:hover   { background: var(--border); }
+.send-btn:hover    { border-color: var(--muted); }
 .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 </style>
@@ -570,297 +301,367 @@ body::after {
 
 <div class="app">
 
-  <!-- ── Title bar ────────────────────────────────────────────────────────── -->
-  <div class="titlebar">
-    <div class="titlebar-left">
-      <div class="titlebar-title"><span>GOLDCREST</span> — BUBO FIELD ASSISTANT v1.0</div>
+  <header class="header">
+    <img class="header-owl" src="/Bubo.svg" alt="Bubo">
+    <div class="header-label">
+      Bubo &nbsp;›› <em>&nbsp;confidence: <span class="header-conf" id="headerConf">—</span></em>
     </div>
-    <div class="titlebar-right">
-      <div class="status-indicator">
-        <div class="status-dot" id="statusDot"></div>
-        <span id="statusText">CONNECTING...</span>
-      </div>
-      <div class="wm-btns">
-        <div class="wm-btn"></div>
-        <div class="wm-btn"></div>
-        <div class="wm-btn"></div>
-      </div>
-    </div>
+  </header>
+
+  <div class="messages" id="messages"></div>
+
+  <div class="input-row">
+    <input class="chat-input" id="chatInput" placeholder="Describe what you saw..." autocomplete="off" disabled>
+    <button class="send-btn" id="sendBtn" disabled>↑</button>
   </div>
 
-  <!-- ── Body ─────────────────────────────────────────────────────────────── -->
-  <div class="body">
-
-    <!-- ── Sidebar ────────────────────────────────────────────────────────── -->
-    <div class="sidebar">
-      <div class="owl-frame">
-        <img id="bubo" src="/Bubo.svg" alt="Bubo">
-      </div>
-
-      <div class="sidebar-rule"></div>
-
-      <div class="stat">
-        <div class="stat-label">CONF</div>
-        <div class="stat-val accent" id="sConf">--</div>
-      </div>
-
-      <div class="conf-bar">
-        <div class="conf-bar-fill" id="sConfBar"></div>
-      </div>
-
-      <div class="sidebar-rule"></div>
-
-      <div class="stat">
-        <div class="stat-label">Q LEFT</div>
-        <div class="stat-val" id="sQLft">3</div>
-      </div>
-
-      <div class="stat">
-        <div class="stat-label">SESS</div>
-        <div class="stat-val" id="sSess">001</div>
-      </div>
-    </div>
-
-    <!-- ── Chat main ──────────────────────────────────────────────────────── -->
-    <div class="chat-main">
-      <div class="messages" id="messages"></div>
-
-      <div class="statusbar">
-        <div class="statusbar-blink off" id="sbBlink"></div>
-        <div class="statusbar-text" id="sbText">READY</div>
-        <div class="statusbar-right">Q REMAINING · <span id="sbQLft">3</span></div>
-      </div>
-
-      <div class="input-row">
-        <input
-          class="chat-input"
-          id="chatInput"
-          placeholder="DESCRIBE YOUR SIGHTING..."
-          autocomplete="off"
-          disabled
-        />
-        <button class="send-btn" id="sendBtn" disabled>SEND ▶</button>
-      </div>
-    </div>
-
-  </div>
 </div>
 
 <script>
 
-// ─── Section 2: State ─────────────────────────────────────────────────────────
-//
-// Everything the app needs to remember between messages.
-// `history` is the array we send to the server on every request.
-// The server appends to it and sends it back — we replace our copy.
+// ─── Quick-reply button sets ──────────────────────────────────────────────────
 
-let history        = [];   // full conversation history
-let questionsLeft  = 3;    // tracks Bubo's 3-question limit
-let sessionNum     = 1;    // display only
-let waitingForResp = false; // true while fetch is in flight — blocks double-sends
-let ebirdAnimFrame = null; // ref to the eBird loader interval
+const AXIS_BUTTONS = {
+  location: [
+    { label: '🌳 woodland / forest',  value: 'woodland or forest'            },
+    { label: '🏠 urban / garden',     value: 'urban area or garden'          },
+    { label: '🌊 near water',         value: 'near water'                    },
+    { label: '🦅 soaring / wires',    value: 'open sky, soaring or on wires' },
+    { label: '🌾 open field / heath', value: 'open field or heath'           },
+  ],
+  size: [
+    { label: '🐦 sparrow-sized',    value: 'about sparrow-sized'   },
+    { label: '🐦 blackbird-sized',  value: 'about blackbird-sized' },
+    { label: '🕊️ pigeon-sized',     value: 'about pigeon-sized'   },
+    { label: '🦅 crow-sized',       value: 'about crow-sized'     },
+    { label: '🦢 larger than crow', value: 'larger than a crow'   },
+  ],
+};
 
+const COLOURS = [
+  { label: '⬛ black',        value: 'black'         },
+  { label: '⬜ white',        value: 'white'         },
+  { label: '🟤 brown',        value: 'brown'         },
+  { label: '🟠 orange',       value: 'orange'        },
+  { label: '🔴 red / rufous', value: 'red or rufous' },
+  { label: '🟡 yellow',       value: 'yellow'        },
+  { label: '🔵 blue',         value: 'blue'          },
+  { label: '🟢 green',        value: 'green'         },
+  { label: '🩶 grey',         value: 'grey'          },
+];
 
-// ─── Section 3: DOM helpers ───────────────────────────────────────────────────
+// ─── Progress dots ────────────────────────────────────────────────────────────
+
+const AXES_ORDER = ['location', 'size', 'colour', 'behaviour', 'sound'];
+const axesDone   = new Set();
+
+function makeProgressRow() {
+  const row = document.createElement('div');
+  row.className = 'progress-row';
+  row.id = 'progressRow';
+  AXES_ORDER.forEach((ax, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'progress-dot' + (axesDone.has(ax) ? ' done' : '');
+    dot.dataset.axis = ax;
+    row.appendChild(dot);
+    if (i < AXES_ORDER.length - 1) {
+      const line = document.createElement('div');
+      line.className = 'progress-line';
+      row.appendChild(line);
+    }
+  });
+  return row;
+}
+
+function refreshProgressDots() {
+  document.querySelectorAll('#progressRow .progress-dot').forEach(dot => {
+    dot.classList.toggle('done', axesDone.has(dot.dataset.axis));
+  });
+}
+
+// ─── State ────────────────────────────────────────────────────────────────────
+
+let history          = [];
+let waitingForResp   = false;
+let userLocation     = null;
+let locationInjected = false;
+
+// ─── DOM refs ─────────────────────────────────────────────────────────────────
 
 const msgsEl    = document.getElementById('messages');
 const inputEl   = document.getElementById('chatInput');
 const sendBtnEl = document.getElementById('sendBtn');
-const sConfEl   = document.getElementById('sConf');
-const sConfBar  = document.getElementById('sConfBar');
-const sQLftEl   = document.getElementById('sQLft');
-const sbBlinkEl = document.getElementById('sbBlink');
-const sbTextEl  = document.getElementById('sbText');
-const sbQLftEl  = document.getElementById('sbQLft');
-const statusDot = document.getElementById('statusDot');
-const statusTxt = document.getElementById('statusText');
 
-function scrollToBottom() {
-  msgsEl.scrollTop = msgsEl.scrollHeight;
+function scrollToBottom() { msgsEl.scrollTop = msgsEl.scrollHeight; }
+
+function setInputEnabled(on) {
+  inputEl.disabled   = !on;
+  sendBtnEl.disabled = !on;
+  if (on) inputEl.focus();
 }
 
-// Add a plain text message bubble to the chat
+// ─── Bubble helpers ───────────────────────────────────────────────────────────
+
+function addUserBubble(text) {
+  const el = document.createElement('div');
+  el.className = 'msg-user';
+  el.textContent = text;
+  msgsEl.appendChild(el);
+  scrollToBottom();
+}
+
 function addBubble(who, text) {
-  const row = document.createElement('div');
-  row.className = `msg-row ${who}`;
-  row.innerHTML = `
-    <div class="msg-who">[ ${who === 'user' ? 'YOU' : 'BUBO'} ]</div>
-    <div class="bubble">${text.replace(/\n/g, '<br>')}</div>
-  `;
-  msgsEl.appendChild(row);
+  if (who === 'user') { addUserBubble(text); return; }
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-bubo';
+  const p = document.createElement('div');
+  p.className = 'msg-bubo-text';
+  p.innerHTML = text.replace(/\n/g, '<br>');
+  wrap.appendChild(p);
+  msgsEl.appendChild(wrap);
   scrollToBottom();
-  return row;
 }
 
-// Show the animated dots while waiting for Bubo to respond
 function showTyping() {
-  const row = document.createElement('div');
-  row.className = 'msg-row bubo typing-row';
-  row.id = 'typingRow';
-  row.innerHTML = `
-    <div class="msg-who">[ BUBO ]</div>
-    <div class="typing-bubble">
-      <div class="typing-dot"></div>
-      <div class="typing-dot"></div>
-      <div class="typing-dot"></div>
-    </div>
-  `;
-  msgsEl.appendChild(row);
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-bubo';
+  wrap.id = 'typingRow';
+  wrap.innerHTML = `<div class="typing">
+    <div class="typing-dot"></div>
+    <div class="typing-dot"></div>
+    <div class="typing-dot"></div>
+  </div>`;
+  msgsEl.appendChild(wrap);
   scrollToBottom();
 }
 
-function hideTyping() {
-  const row = document.getElementById('typingRow');
-  if (row) row.remove();
-}
+function hideTyping() { document.getElementById('typingRow')?.remove(); }
 
-// Show the eBird ▓░░░░ loader inside chat
-function showEbirdLoader() {
-  const row = document.createElement('div');
-  row.className = 'msg-row bubo';
-  row.id = 'ebirdRow';
-  row.innerHTML = `
-    <div class="msg-who">[ BUBO ]</div>
-    <div class="ebird-row">
-      QUERYING EBIRD
-      <span id="ebirdBar">▓░░░░░░░░░░░░░░░</span>
-    </div>
-  `;
-  msgsEl.appendChild(row);
-  scrollToBottom();
+// ─── Confidence header ────────────────────────────────────────────────────────
 
-  // Animate the bar
-  let dc = 0;
-  ebirdAnimFrame = setInterval(() => {
-    const bar = document.getElementById('ebirdBar');
-    if (!bar) return;
-    dc = (dc + 1) % 16;
-    bar.textContent = '▓'.repeat(dc + 1) + '░'.repeat(15 - dc);
-  }, 130);
-}
-
-function hideEbirdLoader() {
-  clearInterval(ebirdAnimFrame);
-  const row = document.getElementById('ebirdRow');
-  if (row) row.remove();
-}
-
-// Update the sidebar confidence display
 function updateConf(score) {
-  if (score === null) return;
-  sConfEl.textContent = score;
-  sConfBar.style.width = score + '%';
+  document.getElementById('headerConf').textContent = score + '%';
 }
 
-// Update questions-left counters (sidebar + status bar)
-function updateQLft(n) {
-  questionsLeft = n;
-  sQLftEl.textContent = n;
-  sbQLftEl.textContent = n;
+// ─── Tag preprocessing ────────────────────────────────────────────────────────
+// Strips [conf:N] and [buttons:X] before display; uses them to update state.
+
+function preprocessResponse(rawText) {
+  const confMatch    = rawText.match(/\[conf:(\d+)\]/i);
+  const buttonsMatch = rawText.match(/\[buttons:(\w+)\]/i);
+
+  if (confMatch) updateConf(parseInt(confMatch[1]));
+
+  const clean = rawText
+    .replace(/\[conf:\d+\]\n?/gi, '')
+    .replace(/\[buttons:\w+\]\n?/gi, '')
+    .trim();
+
+  return {
+    clean,
+    axis: buttonsMatch?.[1]?.toLowerCase() ?? null,
+    conf: confMatch ? parseInt(confMatch[1]) : null,
+  };
 }
 
-// Set the status bar text and blink state
-function setStatus(text, blinking = false) {
-  sbTextEl.textContent = text;
-  sbBlinkEl.classList.toggle('off', !blinking);
+// ─── Bird photo (Wikipedia) ───────────────────────────────────────────────────
+
+async function fetchBirdPhoto(commonName) {
+  try {
+    const title = commonName.trim().replace(/ /g, '_');
+    const res = await fetch(
+      `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.thumbnail?.source ?? null;
+  } catch {
+    return null;
+  }
 }
 
-// Enable or disable the input
-function setInputEnabled(enabled) {
-  inputEl.disabled  = !enabled;
-  sendBtnEl.disabled = !enabled;
-  if (enabled) inputEl.focus();
+// ─── Quick-reply injection ────────────────────────────────────────────────────
+
+function addQuickReplies(axis, parentWrap) {
+  const buttons = AXIS_BUTTONS[axis];
+  if (!buttons) return;
+
+  axesDone.add(axis);
+  refreshProgressDots();
+
+  const row = document.createElement('div');
+  row.className = 'quick-replies';
+
+  buttons.forEach(({ label, value }) => {
+    const btn = document.createElement('button');
+    btn.className = 'qr-btn';
+    btn.textContent = label;
+    btn.addEventListener('click', () => {
+      row.querySelectorAll('.qr-btn').forEach(b => {
+        b.disabled = true;
+        if (b === btn) b.classList.add('picked');
+      });
+      addUserBubble(label);
+      sendMessage(value);
+    });
+    row.appendChild(btn);
+  });
+
+  parentWrap.appendChild(row);
+  scrollToBottom();
 }
 
+// ─── Colour multi-select (up to 3) ───────────────────────────────────────────
 
-// ─── Section 4: Response parser ───────────────────────────────────────────────
-//
-// Bubo's response is plain text from Claude.
-// We inspect it to decide how to render it.
-//
-// Three possible formats:
-//   A) Contains "**Possible ID:**"  → render as ID card
-//   B) Contains "**Status:** Unidentified" → render as unidentified card
-//   C) Anything else → render as plain bubble
+function addColourButtons(parentWrap) {
+  axesDone.add('colour');
+  refreshProgressDots();
 
-function parseAndRender(text) {
+  const selected = [];
 
-  // ── A: ID card ──
+  const grid = document.createElement('div');
+  grid.className = 'quick-replies';
+
+  const doneBtn = document.createElement('button');
+  doneBtn.className = 'qr-btn qr-done';
+  doneBtn.textContent = 'Done →';
+  doneBtn.disabled = true;
+
+  COLOURS.forEach(({ label, value }) => {
+    const btn = document.createElement('button');
+    btn.className = 'qr-btn';
+    btn.textContent = label;
+    btn.addEventListener('click', () => {
+      const idx = selected.indexOf(value);
+      if (idx >= 0) {
+        selected.splice(idx, 1);
+        btn.classList.remove('picked');
+      } else if (selected.length < 3) {
+        selected.push(value);
+        btn.classList.add('picked');
+      }
+      doneBtn.disabled = selected.length === 0;
+    });
+    grid.appendChild(btn);
+  });
+
+  doneBtn.addEventListener('click', () => {
+    if (selected.length === 0) return;
+    grid.querySelectorAll('.qr-btn').forEach(b => b.disabled = true);
+    doneBtn.disabled = true;
+    const answer = selected.length === 1
+      ? selected[0]
+      : selected.slice(0, -1).join(', ') + ' and ' + selected.at(-1);
+    addUserBubble(answer);
+    sendMessage(answer);
+  });
+
+  grid.appendChild(doneBtn);
+  parentWrap.appendChild(grid);
+  scrollToBottom();
+}
+
+// ─── Response parser ──────────────────────────────────────────────────────────
+
+async function parseAndRender(rawText) {
+  const { clean: text, axis, conf } = preprocessResponse(rawText);
+
+  // ── ID card ──
   if (text.includes('**Possible ID:**')) {
-    const idMatch   = text.match(/\*\*Possible ID:\*\*\s+(.+?)\s+\(\*(.+?)\*\)/);
-    const confMatch = text.match(/\*\*Confidence:\*\*\s+(\d+)\/100/);
-    const reaMatch  = text.match(/\*\*Reason:\*\*\s+([\s\S]+?)(?=\*\*To confirm:|$)/);
-    const confMatch2 = text.match(/\*\*To confirm:\*\*\s+([\s\S]+?)(?=\n\*\*|$)/);
+    const idMatch    = text.match(/\*\*Possible ID:\*\*\s+(.+?)\s+\(\*(.+?)\*\)/);
+    const commonName = idMatch?.[1]?.trim() ?? 'Unknown species';
+    const sciName    = idMatch?.[2]?.trim() ?? '';
 
-    const commonName = idMatch?.[1]?.trim()  ?? 'Unknown species';
-    const sciName    = idMatch?.[2]?.trim()  ?? '';
-    const conf       = confMatch ? parseInt(confMatch[1]) : null;
-    const reason     = reaMatch?.[1]?.trim() ?? '';
-    const toConfirm  = confMatch2?.[1]?.trim() ?? '';
+    const wrap = document.createElement('div');
+    wrap.className = 'msg-bubo';
 
-    if (conf !== null) updateConf(conf);
+    const card = document.createElement('div');
+    card.className = 'id-card';
 
-    const row = document.createElement('div');
-    row.className = 'msg-row bubo';
-    row.innerHTML = `
-      <div class="msg-who">[ BUBO ]</div>
-      <div class="id-card">
-        <div class="id-dither">▓▒░▓▒░▓▒░▓▒░▓▒░▓▒░▓▒░▓▒░▓▒░▓▒░▓▒░▓▒░▓▒░▓▒░</div>
-        <div class="id-badge">▶ SPECIES MATCH</div>
-        <div class="id-name">${commonName.toUpperCase()}</div>
-        <div class="id-sci">${sciName}</div>
-        <div class="id-conf-row">
-          <div class="id-conf-bar">
-            <div class="id-conf-fill" style="width:${conf ?? 0}%"></div>
-          </div>
-          <div class="id-conf-num">${conf ?? '?'}/100</div>
-        </div>
-        <div class="id-reason">${reason.replace(/\n/g,'<br>')}</div>
-        ${toConfirm ? `<div class="id-reason" style="border-top:none;padding-top:0">TO CONFIRM: ${toConfirm}</div>` : ''}
-        <div class="id-btns">
-          <button class="px-btn btn-log" onclick="handleLog('${commonName.replace(/'/g,"\\'")}', '${sciName.replace(/'/g,"\\'")}', ${conf})">▶ LOG IT</button>
-          <button class="px-btn btn-skip" onclick="handleSkip()">✕ NOT SURE</button>
-        </div>
-      </div>
+    const photo = document.createElement('img');
+    photo.className = 'id-card-photo';
+    photo.alt = commonName;
+
+    card.innerHTML = `
+      <div class="id-card-label">Is this your bird?</div>
+      <div class="id-card-name">${commonName}</div>
     `;
-    msgsEl.appendChild(row);
+    card.appendChild(photo);
+
+    const actions = document.createElement('div');
+    actions.className = 'id-card-actions';
+    actions.innerHTML = `
+      <button class="btn-log">Yes! Log it</button>
+      <button class="btn-skip">Not sure</button>
+    `;
+    actions.querySelector('.btn-log').addEventListener('click',
+      () => handleLog(commonName, sciName, conf, actions));
+    actions.querySelector('.btn-skip').addEventListener('click', handleSkip);
+    card.appendChild(actions);
+
+    wrap.appendChild(card);
+    msgsEl.appendChild(wrap);
     scrollToBottom();
+
+    fetchBirdPhoto(commonName).then(url => {
+      if (url) photo.src = url;
+      else     photo.style.display = 'none';
+    });
+
     return;
   }
 
-  // ── B: Unidentified card ──
+  // ── Unidentified ──
   if (text.includes('**Status:** Unidentified')) {
     const evidMatch = text.match(/\*\*Evidence collected:\*\*([\s\S]+?)(?=\*\*Suggested|$)/);
     const nextMatch = text.match(/\*\*Suggested next step:\*\*\s+([\s\S]+?)$/);
-    const evidence  = evidMatch?.[1]?.trim() ?? '';
-    const next      = nextMatch?.[1]?.trim() ?? '';
 
-    const row = document.createElement('div');
-    row.className = 'msg-row bubo';
-    row.innerHTML = `
-      <div class="msg-who">[ BUBO ]</div>
-      <div class="unid-card">
-        <div class="unid-badge">✕ UNIDENTIFIED</div>
-        <div class="unid-body">
-          ${evidence ? evidence.replace(/^[-•]\s*/gm,'').replace(/\n/g,'<br>') : ''}
-          ${next ? `<br><br>NEXT: ${next}` : ''}
-        </div>
+    const wrap = document.createElement('div');
+    wrap.className = 'msg-bubo';
+    const card = document.createElement('div');
+    card.className = 'unid-card';
+    card.innerHTML = `
+      <div class="unid-label">Unidentified</div>
+      <div class="unid-body">
+        ${evidMatch?.[1]?.trim().replace(/\n/g, '<br>') ?? ''}
+        ${nextMatch?.[1] ? `<br><br>${nextMatch[1].trim()}` : ''}
       </div>
     `;
-    msgsEl.appendChild(row);
+    wrap.appendChild(card);
+    msgsEl.appendChild(wrap);
     scrollToBottom();
     return;
   }
 
-  // ── C: Plain bubble ──
-  addBubble('bubo', text);
+  // ── Plain message ──
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-bubo';
+
+  const p = document.createElement('div');
+  p.className = 'msg-bubo-text';
+  p.innerHTML = text.replace(/\n/g, '<br>');
+  wrap.appendChild(p);
+
+  // Show progress dots on first question that has an axis
+  if (axis && !document.getElementById('progressRow')) {
+    wrap.appendChild(makeProgressRow());
+  }
+
+  // Inject buttons based on the tag Bubo sent
+  if (axis === 'colour') {
+    addColourButtons(wrap);
+  } else if (axis) {
+    addQuickReplies(axis, wrap);
+  }
+
+  msgsEl.appendChild(wrap);
+  scrollToBottom();
 }
 
+// ─── Log / Skip handlers ──────────────────────────────────────────────────────
 
-// ─── Section 5: Log / Skip handlers ──────────────────────────────────────────
-
-async function handleLog(commonName, sciName, conf) {
-  document.querySelectorAll('.btn-log, .btn-skip').forEach(b => b.disabled = true);
+async function handleLog(commonName, sciName, conf, actionsEl) {
+  actionsEl.querySelectorAll('button').forEach(b => b.disabled = true);
 
   try {
     const res = await fetch('/log', {
@@ -870,31 +671,22 @@ async function handleLog(commonName, sciName, conf) {
     });
 
     if (res.ok) {
-      addBubble('bubo', `${commonName.toUpperCase()} — LOGGED.`);
+      addBubble('bubo', `${commonName} — Logged.`);
     } else {
       const data = await res.json();
-      addBubble('bubo', `LOG FAILED: ${data.error ?? 'unknown error'}`);
+      addBubble('bubo', `Log failed: ${data.error ?? 'unknown error'}`);
     }
   } catch {
-    addBubble('bubo', 'LOG FAILED: CONNECTION ERROR.');
+    addBubble('bubo', 'Log failed: connection error.');
   }
 }
 
 function handleSkip() {
-  addBubble('user', 'NOT SURE — TELL ME MORE');
+  addUserBubble('Not sure');
   sendMessage('I am not sure about that identification. Can you ask me another question to narrow it down?');
 }
 
-
-// ─── Section 6: Send message ──────────────────────────────────────────────────
-//
-// This is the core loop:
-//   1. Read input
-//   2. Add user bubble to chat
-//   3. Show typing indicator
-//   4. POST to /chat with message + history
-//   5. Hide typing, render Bubo's response
-//   6. Store the updated history the server sends back
+// ─── Send message ─────────────────────────────────────────────────────────────
 
 async function sendMessage(overrideText) {
   const text = overrideText ?? inputEl.value.trim();
@@ -902,52 +694,48 @@ async function sendMessage(overrideText) {
 
   if (!overrideText) {
     inputEl.value = '';
-    addBubble('user', text);
+    addUserBubble(text);
+  }
+
+  // Inject location silently into first API message only
+  let apiText = text;
+  if (!locationInjected && userLocation && history.length === 0) {
+    apiText = `${text}\n\n[My location: ${userLocation}]`;
+    locationInjected = true;
   }
 
   waitingForResp = true;
   setInputEnabled(false);
   showTyping();
-  setStatus('BUBO IS THINKING...', true);
-
-  // Decrement questions counter if it's a clarifying exchange
-  if (questionsLeft > 0 && !overrideText) {
-    updateQLft(questionsLeft - 1);
-  }
 
   try {
     const res = await fetch('/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, history })
+      body: JSON.stringify({ message: apiText, history })
     });
 
     const data = await res.json();
-
     hideTyping();
-    hideEbirdLoader();
 
     if (!res.ok) {
-      addBubble('bubo', `ERROR: ${data.error ?? 'Something went wrong.'}`);
+      addBubble('bubo', `Error: ${data.error ?? 'Something went wrong.'}`);
     } else {
-      history = data.history;  // ← replace our history with the updated version
-      parseAndRender(data.response);
+      history = data.history;
+      await parseAndRender(data.response);
     }
 
   } catch (err) {
     hideTyping();
-    hideEbirdLoader();
-    addBubble('bubo', 'CONNECTION ERROR. CHECK THAT THE SERVER IS RUNNING.');
+    addBubble('bubo', 'Connection error. Check that the server is running.');
     console.error(err);
   }
 
   waitingForResp = false;
   setInputEnabled(true);
-  setStatus('READY');
 }
 
-
-// ─── Section 7: Event listeners ───────────────────────────────────────────────
+// ─── Events ───────────────────────────────────────────────────────────────────
 
 sendBtnEl.addEventListener('click', () => sendMessage());
 
@@ -958,35 +746,48 @@ inputEl.addEventListener('keydown', e => {
   }
 });
 
+// ─── Geolocation ─────────────────────────────────────────────────────────────
+// Reverse geocode via Nominatim (free, no key needed).
+// Result is injected silently into the first message only.
 
-// ─── Section 8: Status check on load ─────────────────────────────────────────
-//
-// On page load, hit /status to see if eBird is connected.
-// If yes, enable the input and show a welcome message.
-// If no, retry every 2 seconds until it's ready.
+function getLocation() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(
+    async pos => {
+      try {
+        const { latitude, longitude } = pos.coords;
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+          { headers: { 'User-Agent': 'Goldcrest/1.0 bird-sighting-app' } }
+        );
+        const data = await res.json();
+        const city    = data.address.city || data.address.town || data.address.village || data.address.county;
+        const country = data.address.country;
+        if (city || country) userLocation = [city, country].filter(Boolean).join(', ');
+      } catch { /* silently skip */ }
+    },
+    () => { /* permission denied — silently skip */ },
+    { timeout: 8000 }
+  );
+}
+
+getLocation();
+
+// ─── Status check on load ─────────────────────────────────────────────────────
 
 function checkStatus() {
   fetch('/status')
     .then(r => r.json())
     .then(data => {
       if (data.connected) {
-        statusDot.className = 'status-dot connected';
-        statusTxt.textContent = 'EBIRD CONNECTED';
         setInputEnabled(true);
-        setStatus('READY');
-
-        // Welcome message
         addBubble('bubo', 'READY.\n\nDescribe what you saw.\nHabitat, size, any markings.\nEven rough details help.');
       } else {
-        statusDot.className = 'status-dot';
-        statusTxt.textContent = 'CONNECTING...';
         setTimeout(checkStatus, 2000);
       }
     })
     .catch(() => {
-      statusDot.className = 'status-dot error';
-      statusTxt.textContent = 'SERVER OFFLINE';
-      setStatus('SERVER NOT FOUND — RUN NODE SERVER.JS');
+      addBubble('bubo', 'Server offline — run node server.js');
       setTimeout(checkStatus, 3000);
     });
 }

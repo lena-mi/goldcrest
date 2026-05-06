@@ -6,7 +6,7 @@ dotenv.config();
 // Create one Supabase client that the rest of the app will use
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 export async function saveSighting(data) {
@@ -15,7 +15,7 @@ export async function saveSighting(data) {
     .insert([data]);
 
   if (error) {
-    console.error('Failed to save sighting:', error.message);
+    console.error('[db] insert failed:', error.message);
     return false;
   }
 
