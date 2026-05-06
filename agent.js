@@ -49,9 +49,12 @@ export async function startMcpClient() {
 
 export async function chat(userMessage, history, mcpClient, anthropicTools) {
   const updatedHistory = [
-  ...history,
-  { role: 'user', content: userMessage }
-];
+    ...history,
+    { role: 'user', content: userMessage }
+  ];
+
+  const meta = extractMetadata(userMessage, updatedHistory);
+  console.log('[meta]', JSON.stringify(meta));
 
   let currentResponse = await client.messages.create({
     model: 'claude-opus-4-5',
@@ -65,8 +68,6 @@ export async function chat(userMessage, history, mcpClient, anthropicTools) {
     const toolUseBlock = currentResponse.content.find(b => b.type === 'tool_use');
 
     if (toolUseBlock.name === 'get_recent_sightings' && !toolUseBlock.input.species_code) {
-      console.log('\n[Bubo tried to query eBird without a species code — intercepted]\n');
-
       updatedHistory.push({
         role: 'assistant',
         content: currentResponse.content
@@ -91,11 +92,6 @@ export async function chat(userMessage, history, mcpClient, anthropicTools) {
 
       continue;
     }
-
-    const toolLabel = toolUseBlock.input.species_code
-      ? `species "${toolUseBlock.input.common_name || toolUseBlock.input.species_code}" in ${toolUseBlock.input.region_code}`
-      : `species "${toolUseBlock.input.common_name}"`;
-    console.log(`\n[Bubo is checking eBird — ${toolLabel}...]\n`);
 
     const toolResult = await mcpClient.callTool({
       name: toolUseBlock.name,
@@ -131,6 +127,46 @@ export async function chat(userMessage, history, mcpClient, anthropicTools) {
   updatedHistory.push({ role: 'assistant', content: response });
 
   return { response, history: updatedHistory };
+}
+
+const AXES = [
+  { name: 'location',    keywords: ['location', 'habitat', 'country', 'region', 'city', 'town', 'village', 'forest', 'wood', 'park', 'garden', 'field', 'river', 'lake', 'coast', 'urban', 'rural', 'near', 'at'] },
+  { name: 'size',        keywords: ['size', 'small', 'large', 'big', 'tiny', 'huge', 'sparrow', 'pigeon', 'crow', 'robin', 'bigger', 'smaller'] },
+  { name: 'field_marks', keywords: ['colour', 'color', 'pattern', 'beak', 'bill', 'tail', 'wing', 'stripe', 'spot', 'crest', 'white', 'black', 'brown', 'red', 'blue', 'green', 'yellow', 'orange', 'grey', 'gray'] },
+  { name: 'behaviour',   keywords: ['behaviour', 'behavior', 'flew', 'flying', 'perched', 'swimming', 'walking', 'hopping', 'ground', 'tree', 'water', 'feeding', 'hovering', 'diving'] },
+  { name: 'sound',       keywords: ['sound', 'call', 'song', 'singing', 'heard', 'chirp', 'tweet', 'whistle', 'screech', 'hoot', 'silent', 'quiet'] },
+];
+
+function extractLocationHint(message) {
+  const match = message.match(/(?:in|near|at|around|from)\s+([A-Z][a-zA-Z\s]+?)(?:[.,]|\s+and\s+|\s+[a-z]|$)/);
+  return match ? match[1].trim() : null;
+}
+
+function countAxes(history) {
+  const text = history
+    .filter(m => m.role === 'user' && typeof m.content === 'string')
+    .map(m => m.content.toLowerCase())
+    .join(' ');
+  return AXES.filter(ax => ax.keywords.some(kw => text.includes(kw))).length;
+}
+
+function inferEvidenceTypes(history) {
+  const text = history
+    .filter(m => m.role === 'user' && typeof m.content === 'string')
+    .map(m => m.content.toLowerCase())
+    .join(' ');
+  return AXES
+    .filter(ax => ax.keywords.some(kw => text.includes(kw)))
+    .map(ax => ax.name);
+}
+
+function extractMetadata(message, history) {
+  return {
+    timestamp: new Date().toISOString(),
+    location_mentioned: extractLocationHint(message),
+    axes_covered: countAxes(history),
+    evidence_types: inferEvidenceTypes(history),
+  };
 }
 
 function parseSighting(text) {

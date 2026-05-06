@@ -170,10 +170,11 @@ body::after {
   pointer-events: none;
 }
 
-canvas#bubo {
+#bubo {
   width: 48px; height: 48px;
   display: block;
   position: relative; z-index: 1;
+  image-rendering: pixelated;
 }
 
 .sidebar-rule {
@@ -593,7 +594,7 @@ canvas#bubo {
     <!-- ── Sidebar ────────────────────────────────────────────────────────── -->
     <div class="sidebar">
       <div class="owl-frame">
-        <canvas id="bubo" width="48" height="48"></canvas>
+        <img id="bubo" src="/Bubo.svg" alt="Bubo">
       </div>
 
       <div class="sidebar-rule"></div>
@@ -646,116 +647,6 @@ canvas#bubo {
 </div>
 
 <script>
-
-// ─── Section 1: Pixel owl ─────────────────────────────────────────────────────
-//
-// Bubo is drawn on a <canvas> element using a 2D grid of colour codes.
-// Each cell in the grid maps to one "pixel" scaled up 4×.
-// We define multiple frames and cycle through them to create animation.
-
-const S = 4;     // scale — each grid cell = 4×4 real pixels
-const OW = 12;   // owl grid width  (columns)
-const OH = 12;   // owl grid height (rows)
-
-// Colour palette — warm browns matching the reference image
-const _ = null;        // transparent
-const B1 = '#2d1a0e';  // darkest brown
-const B2 = '#4a2c12';  // dark brown
-const B3 = '#7a4a1e';  // mid brown
-const B4 = '#a06828';  // warm brown
-const B5 = '#c49040';  // golden brown
-const C1 = '#f0e090';  // cream
-const C2 = '#faf4c8';  // bright cream
-const Y1 = '#d4a820';  // amber
-const Y2 = '#e8c840';  // yellow
-const EK = '#1a0e06';  // near-black pupils
-const G1 = '#3d2810';  // branch dark
-const G2 = '#6b4020';  // branch mid
-
-// Each frame is a 12-row × 12-column grid
-const FRAMES = {
-  idle: [
-    [_,  _,  B2, B1, _,  _,  B1, B2, _,  _,  _,  _],
-    [_,  B2, B3, B2, B1, B1, B2, B3, B2, _,  _,  _],
-    [_,  B1, B4, B5, B3, B3, B5, B4, B1, _,  _,  _],
-    [B1, B3, B5, C1, Y2, Y2, C1, B5, B3, B1, _,  _],
-    [B1, B3, C1, Y2, EK, Y2, Y2, EK, Y2, C1, B1, _],
-    [B1, B3, C1, Y2, Y2, Y1, Y1, Y2, Y2, C1, B1, _],
-    [_,  B1, B4, C1, Y1, Y1, Y1, Y1, C1, B4, _,  _],
-    [_,  B1, B3, C1, C2, C2, C2, C2, C1, B3, _,  _],
-    [_,  B1, B3, C1, C2, C2, C2, C2, C1, B3, _,  _],
-    [_,  B1, B2, B3, B3, B3, B3, B3, B2, B1, _,  _],
-    [_,  B1, G1, G2, G2, G2, G2, G2, G1, B1, B1, _],
-    [_,  _,  B1, G1, G2, G2, G2, G1, G2, G2, B1, _],
-  ],
-  blink: [
-    [_,  _,  B2, B1, _,  _,  B1, B2, _,  _,  _,  _],
-    [_,  B2, B3, B2, B1, B1, B2, B3, B2, _,  _,  _],
-    [_,  B1, B4, B5, B3, B3, B5, B4, B1, _,  _,  _],
-    [B1, B3, B5, C1, Y2, Y2, C1, B5, B3, B1, _,  _],
-    [B1, B3, C1, B4, B4, Y1, Y1, B4, B4, C1, B1, _],
-    [B1, B3, C1, C1, C1, Y1, Y1, C1, C1, C1, B1, _],
-    [_,  B1, B4, C1, Y1, Y1, Y1, Y1, C1, B4, _,  _],
-    [_,  B1, B3, C1, C2, C2, C2, C2, C1, B3, _,  _],
-    [_,  B1, B3, C1, C2, C2, C2, C2, C1, B3, _,  _],
-    [_,  B1, B2, B3, B3, B3, B3, B3, B2, B1, _,  _],
-    [_,  B1, G1, G2, G2, G2, G2, G2, G1, B1, B1, _],
-    [_,  _,  B1, G1, G2, G2, G2, G1, G2, G2, B1, _],
-  ],
-  look_r: [
-    [_,  _,  B2, B1, _,  _,  B1, B2, _,  _,  _,  _],
-    [_,  B2, B3, B2, B1, B1, B2, B3, B2, _,  _,  _],
-    [_,  B1, B4, B5, B3, B3, B5, B4, B1, _,  _,  _],
-    [B1, B3, B5, C1, Y2, Y2, C1, B5, B3, B1, _,  _],
-    [B1, B3, C1, Y2, Y2, EK, Y2, Y2, EK, C1, B1, _],
-    [B1, B3, C1, Y2, Y2, Y1, Y1, Y2, Y2, C1, B1, _],
-    [_,  B1, B4, C1, Y1, Y1, Y1, Y1, C1, B4, _,  _],
-    [_,  B1, B3, C1, C2, C2, C2, C2, C1, B3, _,  _],
-    [_,  B1, B3, C1, C2, C2, C2, C2, C1, B3, _,  _],
-    [_,  B1, B2, B3, B3, B3, B3, B3, B2, B1, _,  _],
-    [_,  B1, G1, G2, G2, G2, G2, G2, G1, B1, B1, _],
-    [_,  _,  B1, G1, G2, G2, G2, G1, G2, G2, B1, _],
-  ],
-};
-
-const cv  = document.getElementById('bubo');
-const ctx = cv.getContext('2d');
-cv.width  = OW * S;
-cv.height = OH * S;
-
-function drawFrame(name) {
-  ctx.clearRect(0, 0, cv.width, cv.height);
-  const f = FRAMES[name];
-  for (let r = 0; r < OH; r++)
-    for (let c = 0; c < OW; c++) {
-      if (!f[r][c]) continue;
-      ctx.fillStyle = f[r][c];
-      ctx.fillRect(c * S, r * S, S, S);
-    }
-}
-
-// Animation sequence — each step is { frame name, duration ms }
-const SEQ = [
-  { f:'idle',   d:2400 },
-  { f:'blink',  d:100  },
-  { f:'idle',   d:800  },
-  { f:'blink',  d:100  },
-  { f:'idle',   d:1600 },
-  { f:'look_r', d:900  },
-  { f:'idle',   d:600  },
-  { f:'blink',  d:100  },
-  { f:'idle',   d:2200 },
-];
-
-let seqIdx = 0;
-function animateOwl() {
-  const step = SEQ[seqIdx];
-  drawFrame(step.f);
-  seqIdx = (seqIdx + 1) % SEQ.length;
-  setTimeout(animateOwl, step.d);
-}
-animateOwl();
-
 
 // ─── Section 2: State ─────────────────────────────────────────────────────────
 //
@@ -968,14 +859,25 @@ function parseAndRender(text) {
 
 // ─── Section 5: Log / Skip handlers ──────────────────────────────────────────
 
-function handleLog(commonName, sciName, conf) {
-  // Phase 3 will save to Supabase here.
-  // For now, just confirm in chat.
-  addBubble('bubo',
-    `SIGHTING LOGGED\n${commonName.toUpperCase()}\nConf: ${conf}/100\n\nPhase 3 will save this to the database.`
-  );
-  // Disable the buttons on the card so it can't be logged twice
+async function handleLog(commonName, sciName, conf) {
   document.querySelectorAll('.btn-log, .btn-skip').forEach(b => b.disabled = true);
+
+  try {
+    const res = await fetch('/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ common_name: commonName, scientific_name: sciName, confidence: conf })
+    });
+
+    if (res.ok) {
+      addBubble('bubo', `${commonName.toUpperCase()} — LOGGED.`);
+    } else {
+      const data = await res.json();
+      addBubble('bubo', `LOG FAILED: ${data.error ?? 'unknown error'}`);
+    }
+  } catch {
+    addBubble('bubo', 'LOG FAILED: CONNECTION ERROR.');
+  }
 }
 
 function handleSkip() {

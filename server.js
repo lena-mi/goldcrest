@@ -1,5 +1,6 @@
 import express from 'express';
 import { chat, startMcpClient } from './agent.js';
+import { saveSighting } from './db.js';
 
 // ─── Section A: Setup ─────────────────────────────────────────────────────────
 
@@ -8,6 +9,7 @@ const PORT = 3000;
 
 app.use(express.json());
 app.use(express.static('public'));
+app.use('/assets', express.static('assets'));
 
 // ─── Section B: MCP init ──────────────────────────────────────────────────────
 //
@@ -62,6 +64,31 @@ app.post('/chat', async (req, res) => {
     console.error('[server] chat() error:', err);
     res.status(500).json({ error: 'Something went wrong. Please try again.' });
   }
+});
+
+// POST /log
+// Receives: { common_name, scientific_name, confidence }
+// Saves the confirmed sighting to Supabase.
+
+app.post('/log', async (req, res) => {
+  const { common_name, scientific_name, confidence } = req.body;
+
+  if (!common_name) {
+    return res.status(400).json({ error: 'common_name is required.' });
+  }
+
+  const ok = await saveSighting({
+    common_name,
+    scientific_name: scientific_name ?? null,
+    confidence: confidence ?? null,
+    recorded_at: new Date().toISOString(),
+  });
+
+  if (!ok) {
+    return res.status(500).json({ error: 'Failed to save sighting.' });
+  }
+
+  res.json({ saved: true });
 });
 
 // GET /status
